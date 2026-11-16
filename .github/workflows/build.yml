@@ -1,0 +1,24 @@
+name: Build
+
+# Compiles Islet on every push and pull request so broken changes are caught early.
+# GitHub Actions is free for public repositories.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build src/Islet/Islet.csproj -c Release

@@ -1,0 +1,52 @@
+name: Release
+
+# Push a version tag to publish a release:
+#   git tag v0.3.1
+#   git push origin v0.3.1
+# This builds Islet, packs the installer with Velopack (MIT, free) and uploads it to GitHub Releases.
+# Installed copies of Islet pick the new version up automatically. No paid services, no secrets:
+# the built-in GITHUB_TOKEN is enough.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write   # needed to create the release
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Read version from tag
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Publish (self-contained, no .NET install needed for users)
+        run: dotnet publish src/Islet/Islet.csproj -c Release -r win-x64 --self-contained -p:Version=${{ env.VERSION }} -o publish
+
+      - name: Install Velopack CLI
+        run: dotnet tool install -g vpk --version 1.2.161
+
+      - name: Fetch previous release (enables small delta updates)
+        continue-on-error: true
+        run: vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pack installer
+        run: >
+          vpk pack --packId Islet --packVersion ${{ env.VERSION }} --packDir publish --mainExe Islet.exe
+          --packTitle Islet --packAuthors KrishViradiya --icon assets/islet.ico
+
+      - name: Upload to GitHub Releases
+        run: >
+          vpk upload github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }}
+          --publish --merge --releaseName "Islet ${{ env.VERSION }}" --tag ${{ github.ref_name }}
