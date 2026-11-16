@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- The 10.0.19041 suffix unlocks WinRT APIs (media sessions) directly from C#. -->
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <!-- Only used for the tray icon (NotifyIcon) and battery status. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Islet</AssemblyName>
+    <RootNamespace>Islet</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>0.3.0</Version>
+    <StartupObject>Islet.Program</StartupObject>
+    <ApplicationIcon>..\..\assets\islet.ico</ApplicationIcon>
+    <Product>Islet</Product>
+    <Description>A Dynamic Island for Windows</Description>
+    <Authors>KrishViradiya</Authors>
+    <Copyright>Copyright (c) 2026 KrishViradiya. MIT License.</Copyright>
+    <!-- WPF reads DPI awareness from app.manifest; this WinForms-only warning doesn't apply. -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Shipped next to Islet.exe so Settings can point Codex at it. -->
+    <None Include="..\..\tools\islet-codex-notify.ps1" Link="islet-codex-notify.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <!-- License texts travel with every install (required by MIT for redistribution). -->
+    <None Include="..\..\LICENSE" Link="LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\PRIVACY.md" Link="PRIVACY.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- MIT licensed: installer, uninstaller and free self-updates from GitHub Releases. -->
+    <PackageReference Include="Velopack" Version="1.2.161" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Program.Main runs Velopack before WPF starts, so App.xaml is a plain page, not the entry point. -->
+    <ApplicationDefinition Remove="App.xaml" />
+    <Page Include="App.xaml" />
+  </ItemGroup>
+
+</Project>

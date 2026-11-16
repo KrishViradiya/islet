@@ -1,0 +1,757 @@
+<Window x:Class="Islet.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Islet Settings" Width="860" Height="640" MinWidth="720" MinHeight="480"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource PanelBg}" Foreground="{DynamicResource Fg}"
+        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="44" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <Style x:Key="PageTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="2,0,0,18"/>
+        </Style>
+        <Style x:Key="Section" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource Dim}"/>
+            <Setter Property="Margin" Value="4,6,0,8"/>
+        </Style>
+        <Style x:Key="Group" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Card}"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,18"/>
+        </Style>
+        <Style x:Key="Row" TargetType="Border">
+            <Setter Property="Padding" Value="16,12"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Divider}"/>
+        </Style>
+        <Style x:Key="RowTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13.5"/>
+        </Style>
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Foreground" Value="{DynamicResource Dim}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,2,24,0"/>
+        </Style>
+        <Style x:Key="Value" TargetType="TextBlock">
+            <Setter Property="Width" Value="56"/>
+            <Setter Property="TextAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{DynamicResource Dim}"/>
+        </Style>
+        <Style x:Key="Field" TargetType="TextBox">
+            <Setter Property="Foreground" Value="{DynamicResource Fg}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource Fg}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Bg" Background="{DynamicResource Card}" CornerRadius="8" Padding="10,6"
+                                BorderThickness="1" BorderBrush="Transparent">
+                            <ScrollViewer x:Name="PART_ContentHost"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="Swatch" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Width="26" Height="26">
+                            <Ellipse x:Name="Ring" Stroke="{DynamicResource Fg}" StrokeThickness="2" Opacity="0"/>
+                            <Ellipse Margin="4" Fill="{Binding}"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Ring" Property="Opacity" Value="0.6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ============ SIDEBAR ============ -->
+        <Border Background="{DynamicResource NavBg}">
+            <DockPanel Margin="12,16,12,14">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,4,0,24">
+                    <Grid Width="42" Height="22" VerticalAlignment="Center">
+                        <Border Background="#000" CornerRadius="0,0,11,11" BorderBrush="{DynamicResource Divider}" BorderThickness="1"/>
+                        <Ellipse Width="6" Height="6" Fill="{DynamicResource Accent}" HorizontalAlignment="Right" Margin="0,0,9,0"/>
+                    </Grid>
+                    <StackPanel Margin="12,0,0,0">
+                        <TextBlock Text="Islet" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="VersionText" Text="Version" FontSize="11" Foreground="{DynamicResource Dim}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Bottom">
+                    <TextBlock Text="Changes are saved right away" FontSize="11" Foreground="{DynamicResource Faint}" Margin="12,0,0,10"/>
+                    <Button Click="Quit_Click" Cursor="Hand" Focusable="False">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="Bg" CornerRadius="8" Padding="12,9" Background="Transparent">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE7E8;" FontFamily="{StaticResource Icons}" FontSize="14" Foreground="#FF6B6B" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Quit Islet" Margin="12,0,0,0" Foreground="#FF6B6B" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Bg" Property="Background" Value="{DynamicResource Card}"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel>
+                    <RadioButton Style="{StaticResource NavItem}" Tag="&#xE790;" Content="Appearance" IsChecked="True" Checked="Nav_Checked" GroupName="Nav"/>
+                    <RadioButton Style="{StaticResource NavItem}" Tag="&#xE713;" Content="Behavior" Checked="Nav_Checked" GroupName="Nav"/>
+                    <RadioButton Style="{StaticResource NavItem}" Tag="&#xE8D6;" Content="Music" Checked="Nav_Checked" GroupName="Nav"/>
+                    <RadioButton Style="{StaticResource NavItem}" Tag="&#xE99A;" Content="Agents" Checked="Nav_Checked" GroupName="Nav"/>
+                    <RadioButton Style="{StaticResource NavItem}" Tag="&#xECA5;" Content="Modules" Checked="Nav_Checked" GroupName="Nav"/>
+                    <RadioButton Style="{StaticResource NavItem}" Tag="&#xE946;" Content="About" Checked="Nav_Checked" GroupName="Nav"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- ============ CONTENT ============ -->
+        <Grid Grid.Column="1">
+            <Button Style="{StaticResource IconButton}" Content="&#xE8BB;" FontSize="11" Width="40" Height="32"
+                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,8,0" Panel.ZIndex="2"
+                    WindowChrome.IsHitTestVisibleInChrome="True" Click="Close_Click" ToolTip="Close"/>
+
+            <ScrollViewer x:Name="Scroller" Margin="0,44,0,0" VerticalScrollBarVisibility="Hidden" Focusable="False">
+                <Grid Margin="36,0,36,28" x:Name="Pages">
+                    <Grid.RenderTransform><TranslateTransform/></Grid.RenderTransform>
+
+                    <!-- ===================== APPEARANCE ===================== -->
+                    <StackPanel x:Name="PageAppearance">
+                        <TextBlock Text="Appearance" Style="{StaticResource PageTitle}"/>
+
+                        <TextBlock Text="LOOK" Style="{StaticResource Section}"/>
+                        <Border Style="{StaticResource Group}">
+                            <StackPanel>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Island style" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Notch hangs from the screen edge; Floating is a pill with a gap above it" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="1" Style="{StaticResource SegmentGroup}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <RadioButton Style="{StaticResource Segment}" Content="Notch" GroupName="IStyle" IsChecked="{Binding Style, Converter={StaticResource Is}, ConverterParameter=Notch}"/>
+                                                <RadioButton Style="{StaticResource Segment}" Content="Floating" GroupName="IStyle" IsChecked="{Binding Style, Converter={StaticResource Is}, ConverterParameter=Floating}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Theme" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="System follows your Windows light/dark setting" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="1" Style="{StaticResource SegmentGroup}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <RadioButton Style="{StaticResource Segment}" Content="System" GroupName="Theme" IsChecked="{Binding Theme, Converter={StaticResource Is}, ConverterParameter=System}"/>
+                                                <RadioButton Style="{StaticResource Segment}" Content="Dark" GroupName="Theme" IsChecked="{Binding Theme, Converter={StaticResource Is}, ConverterParameter=Dark}"/>
+                                                <RadioButton Style="{StaticResource Segment}" Content="Light" GroupName="Theme" IsChecked="{Binding Theme, Converter={StaticResource Is}, ConverterParameter=Light}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <StackPanel>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="Accent colour" Style="{StaticResource RowTitle}"/>
+                                                <TextBlock Text="Album art takes the colour of the song that's playing" Style="{StaticResource Hint}"/>
+                                            </StackPanel>
+                                            <Border Grid.Column="1" Style="{StaticResource SegmentGroup}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <RadioButton Style="{StaticResource Segment}" Content="Album art" GroupName="Accent" IsChecked="{Binding Accent, Converter={StaticResource Is}, ConverterParameter=Album}"/>
+                                                    <RadioButton Style="{StaticResource Segment}" Content="Fixed" GroupName="Accent" IsChecked="{Binding Accent, Converter={StaticResource Is}, ConverterParameter=Custom}"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </Grid>
+                                        <ItemsControl x:Name="Swatches" Margin="0,12,0,0">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Style="{StaticResource Swatch}" Tag="{Binding}" Click="Swatch_Click" ToolTip="{Binding}"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource Row}" BorderThickness="0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Music glow" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="The island softly glows in the album colour while music plays" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding MusicGlow}"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="SIZE &amp; TRANSPARENCY" Style="{StaticResource Section}"/>
+                        <Border Style="{StaticResource Group}">
+                            <StackPanel>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="220"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Island size" Style="{StaticResource RowTitle}" VerticalAlignment="Center"/>
+                                        <Slider Grid.Column="1" Style="{StaticResource IsletSlider}" Minimum="0.8" Maximum="2" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding Scale}"/>
+                                        <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding Scale, Converter={StaticResource Unit}, ConverterParameter=pct}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="220"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Opacity when folded" Style="{StaticResource RowTitle}" VerticalAlignment="Center"/>
+                                        <Slider Grid.Column="1" Style="{StaticResource IsletSlider}" Minimum="0.2" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding CollapsedOpacity}"/>
+                                        <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding CollapsedOpacity, Converter={StaticResource Unit}, ConverterParameter=pct}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}" BorderThickness="0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="220"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Opacity when open" Style="{StaticResource RowTitle}" VerticalAlignment="Center"/>
+                                        <Slider Grid.Column="1" Style="{StaticResource IsletSlider}" Minimum="0.2" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding ExpandedOpacity}"/>
+                                        <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding ExpandedOpacity, Converter={StaticResource Unit}, ConverterParameter=pct}"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="MOTION" Style="{StaticResource Section}"/>
+                        <Border Style="{StaticResource Group}">
+                            <StackPanel>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Animation feel" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Spring physics: Bouncy overshoots a little, Smooth glides, Snappy is quick" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="1" Style="{StaticResource SegmentGroup}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <RadioButton Style="{StaticResource Segment}" Content="Smooth" GroupName="Motion" IsChecked="{Binding Motion, Converter={StaticResource Is}, ConverterParameter=Smooth}"/>
+                                                <RadioButton Style="{StaticResource Segment}" Content="Bouncy" GroupName="Motion" IsChecked="{Binding Motion, Converter={StaticResource Is}, ConverterParameter=Bouncy}"/>
+                                                <RadioButton Style="{StaticResource Segment}" Content="Snappy" GroupName="Motion" IsChecked="{Binding Motion, Converter={StaticResource Is}, ConverterParameter=Snappy}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="LIVING ISLAND" Style="{StaticResource Section}"/>
+                        <Border Style="{StaticResource Group}">
+                            <StackPanel>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Liquid island" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="The lower edge is an elastic membrane: it bulges toward your cursor, drops a bead on good news and jolts on errors" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding LiquidEdge}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Ripple to the music" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Follows your speakers' real loudness — long waves on the left, short on the right — with a rim in the album colour" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding LiquidMusic}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Sag and sleep when you're away" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="After 3 minutes without input the island droops and Blip dozes off" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding SagWhenAway}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Blip" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="A tiny robot in the pill. Eyes follow your cursor; he vibes to music, focuses while agents work, asks when they need you, sleeps when you're away — and gets dizzy if you poke or shake him" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding ShowMascot}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}" BorderThickness="0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Clock in the folded pill" Style="{StaticResource RowTitle}" VerticalAlignment="Center"/>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding ClockInPill}"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- ===================== BEHAVIOR ===================== -->
+                    <StackPanel x:Name="PageBehavior" Visibility="Collapsed">
+                        <TextBlock Text="Behavior" Style="{StaticResource PageTitle}"/>
+                        <Border Style="{StaticResource Group}">
+                            <StackPanel>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Start with Windows" Style="{StaticResource RowTitle}" VerticalAlignment="Center"/>
+                                        <CheckBox x:Name="StartupToggle" Grid.Column="1" Style="{StaticResource Toggle}" Click="Startup_Click"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Hide in full-screen apps" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Games, full-screen video, presentations" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding HideInFullscreen}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Ctrl + Alt + I opens the island" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Keeps it open until you press it again or unpin it" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding HotkeyEnabled}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}" BorderThickness="0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="220"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Hover delay" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="How long to hover before it opens" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <Slider Grid.Column="1" Style="{StaticResource IsletSlider}" Minimum="0" Maximum="800" TickFrequency="20" IsSnapToTickEnabled="True" Value="{Binding HoverDelayMs}"/>
+                                        <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding HoverDelayMs, Converter={StaticResource Unit}, ConverterParameter=ms}"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="PLACEMENT" Style="{StaticResource Section}"/>
+                        <Border Style="{StaticResource Group}">
+                            <StackPanel>
+                                <Border Style="{StaticResource Row}">
+                                    <StackPanel>
+                                        <TextBlock Text="Display" Style="{StaticResource RowTitle}"/>
+                                        <WrapPanel x:Name="Monitors" Margin="0,10,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource Row}" BorderThickness="0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="220"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Gap from the top" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Floating style only" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <Slider Grid.Column="1" Style="{StaticResource IsletSlider}" Minimum="0" Maximum="40" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding TopOffset}"/>
+                                        <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding TopOffset, Converter={StaticResource Unit}, ConverterParameter=px}"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- ===================== MUSIC ===================== -->
+                    <StackPanel x:Name="PageMusic" Visibility="Collapsed">
+                        <TextBlock Text="Music" Style="{StaticResource PageTitle}"/>
+
+                        <Border Style="{StaticResource Group}" Padding="16,14">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <Border Width="44" Height="44" CornerRadius="22" Background="#1DB954">
+                                    <TextBlock Text="&#xE8D6;" FontFamily="{StaticResource Icons}" FontSize="20" Foreground="Black"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="14,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Spotify &amp; every player" FontWeight="SemiBold" FontSize="14"/>
+                                    <TextBlock Style="{StaticResource Hint}"
+                                               Text="Works with no login: Spotify, YouTube / YouTube Music, Apple Music, Media Player, VLC and browsers. Spotify also gets seeking, shuffle and repeat. With several players open, use the ⇄ button on the card to switch."/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Style="{StaticResource PrimaryButton}" Content="Open Spotify" VerticalAlignment="Center" Click="OpenSpotify_Click"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Style="{StaticResource Group}">
+                            <StackPanel>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Show now playing" Style="{StaticResource RowTitle}" VerticalAlignment="Center"/>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding ShowMedia}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Synced lyrics" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Karaoke-style lines from lrclib.net (free, no account). The song title and artist are sent to it." Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding ShowLyrics}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Peek when the song changes" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Shows the cover and title for a few seconds" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding PeekOnTrackChange}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}" BorderThickness="0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Scroll on the island to change volume" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="With a volume bar right in the island" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding WheelVolume}"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- ===================== AGENTS ===================== -->
+                    <StackPanel x:Name="PageAgents" Visibility="Collapsed">
+                        <TextBlock Text="AI agents" Style="{StaticResource PageTitle}"/>
+
+                        <Border Style="{StaticResource Group}" Padding="16,14">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <Border Width="44" Height="44" CornerRadius="12" Background="{DynamicResource Card}">
+                                    <TextBlock Text="&#xE99A;" FontFamily="{StaticResource Icons}" FontSize="20" Foreground="{DynamicResource Accent}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="14,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Watch your coding agents from the island" FontWeight="SemiBold" FontSize="14"/>
+                                    <TextBlock Style="{StaticResource Hint}"
+                                               Text="See what Claude Code is doing, get a sound and a bead when it finishes, and press Allow / Deny right on the island when it asks for permission. Everything stays on this PC."/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Style="{StaticResource SoftButton}" Content="Try a demo" VerticalAlignment="Center" Click="AgentDemo_Click"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Style="{StaticResource Group}">
+                            <StackPanel>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Show AI agents" Style="{StaticResource RowTitle}" VerticalAlignment="Center"/>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding ShowAgents}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Approve from the island" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="When Claude asks for permission, the island opens with Allow / Deny. No answer in time → the terminal asks as usual. Your deny rules still win." Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding AgentApprovals}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="220"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Wait for an answer" Style="{StaticResource RowTitle}" VerticalAlignment="Center"/>
+                                        <Slider Grid.Column="1" Style="{StaticResource IsletSlider}" Minimum="15" Maximum="300" TickFrequency="15" IsSnapToTickEnabled="True" Value="{Binding ApprovalTimeoutSec}"/>
+                                        <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding ApprovalTimeoutSec, StringFormat='{}{0} s'}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}" BorderThickness="0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Sound when an agent finishes or needs you" Style="{StaticResource RowTitle}" VerticalAlignment="Center"/>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding AgentSound}"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="CLAUDE CODE" Style="{StaticResource Section}"/>
+                        <Border Style="{StaticResource Group}">
+                            <StackPanel>
+                                <Border Style="{StaticResource Row}" BorderThickness="0">
+                                    <StackPanel>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="ClaudeStatus" Text="Hooks not installed" Style="{StaticResource RowTitle}"/>
+                                                <TextBlock Style="{StaticResource Hint}"
+                                                           Text="Adds small hooks to ~/.claude/settings.json (a backup is saved next to it). Each hook runs Windows' curl.exe to tell the island what's happening. If Islet isn't running, Claude Code just carries on."/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Button x:Name="UninstallHooks" Style="{StaticResource SoftButton}" Content="Remove" Margin="0,0,8,0" Click="UninstallHooks_Click"/>
+                                                <Button x:Name="InstallHooks" Style="{StaticResource PrimaryButton}" Content="Install hooks" Click="InstallHooks_Click"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <TextBlock x:Name="HookResult" Style="{StaticResource Hint}" Margin="0,8,0,0" Visibility="Collapsed"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="CODEX CLI (EXPERIMENTAL)" Style="{StaticResource Section}"/>
+                        <Border Style="{StaticResource Group}">
+                            <Border Style="{StaticResource Row}" BorderThickness="0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Finished-turn notifications" Style="{StaticResource RowTitle}"/>
+                                        <TextBlock Style="{StaticResource Hint}" Text="Copies a notify line for ~/.codex/config.toml. Codex then tells the island when a turn completes."/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Style="{StaticResource SoftButton}" Content="Copy config line" VerticalAlignment="Center" Click="CopyCodex_Click"/>
+                                </Grid>
+                            </Border>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- ===================== MODULES ===================== -->
+                    <StackPanel x:Name="PageModules" Visibility="Collapsed">
+                        <TextBlock Text="Modules" Style="{StaticResource PageTitle}"/>
+
+                        <TextBlock Text="WEATHER" Style="{StaticResource Section}"/>
+                        <Border Style="{StaticResource Group}">
+                            <StackPanel>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Weather in the pill" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Temperature in the folded island; it drips when rain is coming within the hour. Uses Open-Meteo (free, no account) — only your city is sent." Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding WeatherEnabled}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}" BorderThickness="0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="220"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="City" Style="{StaticResource RowTitle}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Style="{StaticResource Field}"
+                                                 Text="{Binding WeatherCity, UpdateSourceTrigger=LostFocus}"/>
+                                        <CheckBox Grid.Column="2" Content="°F" Foreground="{DynamicResource Dim}" Margin="12,0,0,0"
+                                                  VerticalAlignment="Center" IsChecked="{Binding Fahrenheit}"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="LIVE ACTIVITIES" Style="{StaticResource Section}"/>
+                        <Border Style="{StaticResource Group}">
+                            <StackPanel>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Show Live Activities" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock x:Name="ApiHint" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding ShowActivities}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}" BorderThickness="0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Peek when an activity starts or finishes" Style="{StaticResource RowTitle}" VerticalAlignment="Center"/>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding PeekOnActivity}"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="PRIVACY SENTINEL" Style="{StaticResource Section}"/>
+                        <Border Style="{StaticResource Group}">
+                            <StackPanel>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Show which app uses the mic, camera or location" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Orange dot = microphone, green = camera, blue = location" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding ShowPrivacy}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}" BorderThickness="0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Alert when an app starts using them" Style="{StaticResource RowTitle}" VerticalAlignment="Center"/>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding PeekOnPrivacy}"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="TABS" Style="{StaticResource Section}"/>
+                        <Border Style="{StaticResource Group}">
+                            <StackPanel>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Shelf" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Drop files on the island, drag them out later" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding ShowShelf}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Clipboard history" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Kept in memory only; just pinned items are saved. Password managers are ignored." Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding ShowClipboard}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}" BorderThickness="0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Paste on click" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Off: clicking an item only copies it" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding PasteOnClick}"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="HEADER" Style="{StaticResource Section}"/>
+                        <Border Style="{StaticResource Group}">
+                            <StackPanel>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Clock" Style="{StaticResource RowTitle}" VerticalAlignment="Center"/>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding ShowClock}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}" BorderThickness="0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Battery" Style="{StaticResource RowTitle}" VerticalAlignment="Center"/>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding ShowBattery}"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- ===================== ABOUT ===================== -->
+                    <StackPanel x:Name="PageAbout" Visibility="Collapsed">
+                        <TextBlock Text="About" Style="{StaticResource PageTitle}"/>
+                        <Border Style="{StaticResource Group}" Padding="18">
+                            <StackPanel>
+                                <TextBlock Text="Islet — a Dynamic Island for Windows" FontSize="15" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,6,0,0"
+                                           Text="Free and open source under the MIT License. No accounts, no ads, no tracking."/>
+                                <WrapPanel Margin="0,16,0,0">
+                                    <Button Style="{StaticResource SoftButton}" Content="GitHub" Margin="0,0,8,0" Click="OpenRepo_Click"/>
+                                    <Button Style="{StaticResource SoftButton}" Content="Open data folder" Margin="0,0,8,0" Click="OpenData_Click"/>
+                                    <Button Style="{StaticResource SoftButton}" Content="Open log" Margin="0,0,8,0" Click="OpenLog_Click"/>
+                                    <Button Style="{StaticResource SoftButton}" Content="Reset to defaults" Click="Reset_Click"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="UPDATES" Style="{StaticResource Section}"/>
+                        <Border Style="{StaticResource Group}">
+                            <StackPanel>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Check for updates automatically" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Twice a day from GitHub Releases. Updates install when you quit Islet." Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding AutoUpdate}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}" BorderThickness="0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="UpdateResult" Text="" Style="{StaticResource Hint}" VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                            <Button x:Name="RestartUpdate" Style="{StaticResource PrimaryButton}" Content="Restart to update"
+                                                    Margin="0,0,8,0" Visibility="Collapsed" Click="RestartUpdate_Click"/>
+                                            <Button Style="{StaticResource SoftButton}" Content="Check now" Click="CheckUpdates_Click"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="CREDITS" Style="{StaticResource Section}"/>
+                        <Border Style="{StaticResource Group}" Padding="18,14">
+                            <TextBlock Style="{StaticResource Hint}" Margin="0" LineHeight="18">
+                                Weather data by Open-Meteo.com (CC BY 4.0). Synced lyrics from LRCLIB (lrclib.net); lyrics belong to their rights holders and are only displayed, never stored.
+                                Installer and updates by Velopack (MIT). Built on .NET (MIT). Icons: Segoe Fluent Icons from Windows.
+                                Design ideas inspired by exuupery/island and TwoCode; no code or artwork was copied.
+                            </TextBlock>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Window>
