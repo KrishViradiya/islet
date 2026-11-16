@@ -22,8 +22,8 @@ public partial class IslandWindow : Window
 {
     private enum Mode { Compact, Peek, Expanded, Drop }
 
-    private const double BaseWindowWidth = 700, BaseWindowHeight = 660;
-    private const double ExpandedWidth = 480, ExpandedPadding = 22; // panel is 448 wide + 16 each side; 12 above, ~10 below
+    private const double BaseWindowWidth = 780, BaseWindowHeight = 660;
+    private const double ExpandedWidth = 600, ExpandedPadding = 24; // panel is 568 wide + 16 each side; 12 above, ~12 below
     private const double PeekWidth = 390, PeekHeight = 66;
     private const int HotkeyId = 0xB001, MicHotkeyId = 0xB002;
     private const double BubbleGap = 6;
@@ -593,7 +593,7 @@ public partial class IslandWindow : Window
     /// <summary>Slide + fade between tabs, direction following the tab order.</summary>
     private void SwitchTab()
     {
-        var panels = new FrameworkElement[] { HomePanel, ShelfPanel, ClipPanel };
+        var panels = new FrameworkElement[] { HomePanel, LivePanel, ShelfPanel, ClipPanel }; // same order as IslandTab
         int index = (int)_vm.Tab;
         var target = panels[index];
         if (target.Visibility == Visibility.Visible) return;
@@ -818,6 +818,12 @@ public partial class IslandWindow : Window
     }
 
     // ================================================================== timers & downloads
+
+    private void LiveChip_Click(object sender, MouseButtonEventArgs e)
+    {
+        _vm.Tab = IslandTab.Live;
+        e.Handled = true;
+    }
 
     private void CustomTimer_Wheel(object sender, MouseWheelEventArgs e)
     {

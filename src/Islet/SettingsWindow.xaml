@@ -133,6 +133,7 @@
 
                 <StackPanel>
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE790;" Content="Appearance" IsChecked="True" Checked="Nav_Checked" GroupName="Nav"/>
+                    <RadioButton Style="{StaticResource NavItem}" Tag="&#xE76E;" Content="Character" Checked="Nav_Checked" GroupName="Nav"/>
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE713;" Content="Behavior" Checked="Nav_Checked" GroupName="Nav"/>
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE8D6;" Content="Music" Checked="Nav_Checked" GroupName="Nav"/>
                     <RadioButton Style="{StaticResource NavItem}" Tag="&#xE99A;" Content="Agents" Checked="Nav_Checked" GroupName="Nav"/>
@@ -343,6 +344,32 @@
                                     </Grid>
                                 </Border>
                             </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- ===================== CHARACTER ===================== -->
+                    <StackPanel x:Name="PageCharacter" Visibility="Collapsed">
+                        <TextBlock Text="Character" Style="{StaticResource PageTitle}"/>
+                        <Border Style="{StaticResource Group}" Padding="14,12">
+                            <StackPanel>
+                                <TextBlock Text="Preview a reaction" Foreground="{DynamicResource Dim}" FontSize="12" Margin="2,0,0,8"/>
+                                <Border Style="{StaticResource SegmentGroup}" HorizontalAlignment="Left">
+                                    <WrapPanel x:Name="Reactions"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                        <WrapPanel x:Name="Gallery" Margin="0,0,0,10"/>
+                        <Border Style="{StaticResource Group}">
+                            <Border Style="{StaticResource Row}" BorderThickness="0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Show a character" Style="{StaticResource RowTitle}"/>
+                                        <TextBlock Text="Lives in the folded pill and the island header. Its eyes follow your cursor and it reacts to music, your agents, timers and downloads." Style="{StaticResource Hint}"/>
+                                    </StackPanel>
+                                    <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding ShowMascot}"/>
+                                </Grid>
+                            </Border>
                         </Border>
                     </StackPanel>
 

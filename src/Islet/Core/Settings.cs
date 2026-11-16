@@ -11,6 +11,7 @@ public enum ThemeMode { System, Dark, Light }
 public enum MotionStyle { Smooth, Bouncy, Snappy }
 public enum AccentSource { Album, Custom }
 public enum IslandStyle { Notch, Floating }
+public enum CharacterKind { Blip, Mochi, Sprout, Orbit }
 
 /// <summary>Every user-customizable option. Changes apply live and are saved automatically.</summary>
 public sealed class IslandSettings : Observable
@@ -73,6 +74,10 @@ public sealed class IslandSettings : Observable
     public bool AutoUpdate { get => _autoUpdate; set => Set(ref _autoUpdate, value); }
 
     public bool ShowMascot { get => _showMascot; set => Set(ref _showMascot, value); }
+
+    private CharacterKind _character = CharacterKind.Blip;
+    /// <summary>Which character lives in the island (ShowMascot = false means none).</summary>
+    public CharacterKind Character { get => _character; set => Set(ref _character, value); }
     public bool ClockInPill { get => _clockInPill; set => Set(ref _clockInPill, value); }
     public bool LiquidMusic { get => _liquidMusic; set => Set(ref _liquidMusic, value); }
     public bool SagWhenAway { get => _sagWhenAway; set => Set(ref _sagWhenAway, value); }

@@ -5,7 +5,45 @@ using System.Windows.Media.Imaging;
 
 namespace Islet.Core;
 
-public enum IslandTab { Home, Shelf, Clipboard }
+public enum IslandTab { Home, Live, Shelf, Clipboard }
+
+/// <summary>
+/// One live thing summarised as a small chip on the Home tab (a timer, a download, an agent, a build…).
+/// Every feature feeds the same strip, so Home never grows when features are added.
+/// </summary>
+public sealed class LiveChip : Observable
+{
+    private string _glyph = "", _title = "", _detail = "";
+    private Brush _accent = Palette.Blue;
+    private double? _progress;
+
+    public LiveChip(string key) => Key = key;
+
+    public string Key { get; }
+    public string Glyph { get => _glyph; private set => Set(ref _glyph, value); }
+    public string Title { get => _title; private set => Set(ref _title, value); }
+    public string Detail { get => _detail; private set => Set(ref _detail, value); }
+    public Brush Accent { get => _accent; private set => Set(ref _accent, value); }
+
+    /// <summary>0..1 draws a ring instead of the glyph.</summary>
+    public double? Progress
+    {
+        get => _progress;
+        private set { if (Set(ref _progress, value)) { Raise(nameof(HasRing)); Raise(nameof(Ring)); } }
+    }
+    public bool HasRing => _progress.HasValue;
+    public double Ring => _progress ?? 0;
+
+    public LiveChip Update(string glyph, string title, string detail, Brush accent, double? progress = null)
+    {
+        Glyph = glyph;
+        Title = title;
+        Detail = detail;
+        Accent = accent;
+        Progress = progress;
+        return this;
+    }
+}
 
 /// <summary>What a slot of the folded island is showing. Earlier = more important.</summary>
 public enum CompactKind { Idle, Agent, Call, Timer, Download, Activity, Media }

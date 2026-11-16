@@ -1,8 +1,23 @@
 # Changelog
 
-## 0.4.0 — everyday helpers
+## 0.4.0 — everyday helpers, a calmer island, and characters
 
-The island now handles the small things you do dozens of times a day.
+The island now handles the small things you do dozens of times a day — and was redesigned so it stays calm
+as features keep coming.
+
+**New layout (built to scale)**
+- **Home is a fixed dashboard**: one slot for urgent things (approvals, time's up, calls), a media hero beside a
+  2×2 action grid, a strip of small live chips, and a slim volume / status bar. It never grows into a long list.
+- **New Live tab** with a count badge: full details for everything ongoing — AI agents, timers, downloads,
+  activities and privacy — grouped with headings. Tap any chip on Home to jump there.
+- The header now holds only the character, the tabs and two icons. The opened island is wider (600 px) for a
+  two-column layout; Shelf and Clipboard scroll inside the island instead of stretching it.
+
+**Characters** — pick one in Settings → Character (with live previews of every reaction):
+- **Blip** the robot, **Mochi** the dumpling, **Sprout** the seedling (blooms on good news, droops when you're away)
+  and **Orbit** the planet (its moon speeds up while agents work). All original, all drawn in code.
+
+**Everyday helpers**
 
 - **Meeting mode.** When Teams, Zoom, Meet or any app uses your microphone, the island shows the app and a call
   timer, plus a big mute button. **Ctrl+Alt+M** mutes / unmutes your mic system-wide from anywhere, with a clear

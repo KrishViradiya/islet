@@ -12,7 +12,7 @@ public enum MascotMood { Idle, Vibing, Focused, Curious, Happy, Sleepy, Dizzy, A
 /// Blip, the island's resident. Moods come from the view model; <see cref="Tick"/> is called ~20×/s by
 /// the window with where the cursor is (for the eyes) and how loud the music is (for the bob).
 /// </summary>
-public partial class MascotView : UserControl
+public partial class MascotView : UserControl, ICharacter
 {
     public static readonly DependencyProperty MoodProperty = DependencyProperty.Register(
         nameof(Mood), typeof(MascotMood), typeof(MascotView),

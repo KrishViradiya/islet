@@ -349,23 +349,32 @@
             </Setter>
         </Style>
 
-        <!-- Quick-action tile: Content = glyph, Tag = label. Background can be overridden (e.g. red when muted). -->
+        <!-- Section heading inside the island (Live tab) -->
+        <Style x:Key="SectionLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource Faint}"/>
+            <Setter Property="Margin" Value="4,4,0,8"/>
+        </Style>
+
+        <!-- Action tile: icon top-left, label bottom-left. Content = glyph, Tag = label. Background can be overridden. -->
         <Style x:Key="Tile" TargetType="Button">
             <Setter Property="Foreground" Value="{DynamicResource Fg}"/>
             <Setter Property="Background" Value="{DynamicResource Card}"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Focusable" Value="False"/>
-            <Setter Property="Margin" Value="0,0,6,0"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Grid>
-                            <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="16"/>
-                            <Border x:Name="Hover" Background="{DynamicResource Card}" CornerRadius="16" Opacity="0"/>
-                            <StackPanel x:Name="Inner" Margin="0,11,0,9" HorizontalAlignment="Center" RenderTransformOrigin="0.5,0.5">
-                                <TextBlock Text="{TemplateBinding Content}" FontFamily="{StaticResource Icons}" FontSize="17" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{TemplateBinding Tag}" FontSize="11" Margin="0,5,0,0" HorizontalAlignment="Center" Opacity="0.75"/>
-                            </StackPanel>
+                            <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="18"/>
+                            <Border x:Name="Hover" Background="{DynamicResource Card}" CornerRadius="18" Opacity="0"/>
+                            <Grid x:Name="Inner" Margin="14,12,12,11" RenderTransformOrigin="0.5,0.5">
+                                <TextBlock Text="{TemplateBinding Content}" FontFamily="{StaticResource Icons}" FontSize="18"
+                                           HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                                <TextBlock Text="{TemplateBinding Tag}" FontSize="12.5" FontWeight="SemiBold"
+                                           HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+                            </Grid>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">

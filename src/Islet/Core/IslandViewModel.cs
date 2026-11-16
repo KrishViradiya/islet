@@ -403,6 +403,76 @@ public sealed class IslandViewModel : Observable, IDisposable
 
     // ---- first run
     public bool ShowWelcome => !Settings.Onboarded;
+
+    // ---- the Live tab and the Home chip strip
+    public ObservableCollection<LiveChip> LiveChips { get; } = new();
+    public int LiveCount => LiveChips.Count;
+    public bool HasLive => LiveChips.Count > 0;
+    public bool NothingLive => !HasLive && !InCall && Agents.Approvals.Count == 0 && Timers.Count == 0 && Downloads.Items.Count == 0
+                               && Agents.Sessions.Count == 0 && Activities.Count == 0;
+    public bool HasAgents => Settings.ShowAgents && Agents.Sessions.Count > 0;
+    public bool HasDownloads => Settings.ShowDownloads && Downloads.Items.Count > 0;
+    public bool HasActivities => Settings.ShowActivities && Activities.Count > 0;
+    public bool HasCamera => Settings.ShowPrivacy && PrivacyUses.Count > 0;
+    public IsletTimer? RingingTimer => Settings.ShowTimers ? TimerHub.Ringing : null;
+    public bool HasRinging => RingingTimer != null;
+    public int ShelfCount => Shelf.Count;
+
+    /// <summary>One quiet line at the bottom of Home: date · weather · battery.</summary>
+    public string StatusLine
+    {
+        get
+        {
+            var parts = new List<string> { DateText };
+            if (HasWeather) parts.Add($"{WeatherGlyph} {WeatherText}");
+            if (BatteryVisible) parts.Add(BatteryText);
+            return string.Join("   ·   ", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
+        }
+    }
+
+    /// <summary>
+    /// Rebuilds the chip strip from every live source, updating chips in place so they don't flicker.
+    /// A new feature only needs to add its entries here (and a section on the Live tab).
+    /// </summary>
+    private void RefreshLiveChips()
+    {
+        var wanted = new List<(string key, Func<LiveChip, LiveChip> fill)>();
+
+        if (Settings.ShowAgents)
+            foreach (var s in Agents.Sessions.Where(s => s.Status is AgentStatus.Working or AgentStatus.NeedsYou))
+                wanted.Add(($"agent:{s.Id}", c => c.Update("", s.Title, s.StatusText, s.StatusBrush)));
+        if (Settings.ShowTimers)
+            foreach (var t in Timers)
+                wanted.Add(($"timer:{t.GetHashCode()}", c => c.Update("", t.Label, t.RemainingText,
+                    t.IsDone ? Palette.Orange : ThemeManager.Accent, t.IsDone ? 0 : t.Fraction)));
+        if (Settings.ShowDownloads)
+            foreach (var d in Downloads.Items.Where(d => d.IsActive))
+                wanted.Add(($"dl:{d.GetHashCode()}", c => c.Update("", d.Name, d.Detail, ThemeManager.Accent)));
+        if (Settings.ShowActivities)
+            foreach (var a in Activities)
+                wanted.Add(($"act:{a.Id}", c => c.Update(a.IsRunning ? "" : a.StateGlyph, a.Title, a.ProgressText, a.AccentBrush,
+                    a.IsRunning && a.HasProgress ? a.ProgressFraction : null)));
+        if (Settings.ShowPrivacy)
+            foreach (var u in PrivacyUses.Where(u => u.IsCamera || (u.IsMicrophone && !Settings.ShowCalls) || u.CapabilityLabel == "location"))
+                wanted.Add(($"priv:{u.Key}", c => c.Update(u.Glyph, u.AppName, u.CapabilityLabel, u.Accent)));
+
+        // Remove chips that ended, then add / update / reorder the rest.
+        foreach (var gone in LiveChips.Where(c => wanted.All(w => w.key != c.Key)).ToList()) LiveChips.Remove(gone);
+        for (int i = 0; i < wanted.Count; i++)
+        {
+            var (key, fill) = wanted[i];
+            var chip = LiveChips.FirstOrDefault(c => c.Key == key) ?? new LiveChip(key);
+            fill(chip);
+            int at = LiveChips.IndexOf(chip);
+            if (at < 0) LiveChips.Insert(i, chip);
+            else if (at != i) LiveChips.Move(at, i);
+        }
+
+        foreach (var p in new[] { nameof(LiveCount), nameof(HasLive), nameof(NothingLive), nameof(HasAgents), nameof(HasDownloads),
+                                  nameof(HasActivities), nameof(HasCamera), nameof(RingingTimer), nameof(HasRinging), nameof(ShelfCount),
+                                  nameof(StatusLine) })
+            Raise(p);
+    }
     public string CompactAgentText => Agents.Approvals.FirstOrDefault() is { } a
         ? $"{a.Agent} · approve {a.Tool}?"
         : CompactAgent is { } s ? $"{s.Agent} · {s.Action}" : "";
@@ -579,6 +649,7 @@ public sealed class IslandViewModel : Observable, IDisposable
                                   nameof(MascotInPill), nameof(ClockInPillVisible), nameof(CompactAgentText), nameof(CompactAgentBrush),
                                   nameof(RunningTimer), nameof(HasTimers), nameof(ActiveDownload) })
             Raise(p);
+        RefreshLiveChips();
         RecomputeMood();
         CompactChanged?.Invoke();
     }
@@ -648,6 +719,7 @@ public sealed class IslandViewModel : Observable, IDisposable
         Hub.Tick();
         Agents.Tick();
         TimerHub.Tick();
+        RefreshLiveChips();
         if (CompactAgent != null) Raise(nameof(CompactAgentText));
         if (InCall) Raise(nameof(CallDuration));
         if (_ticks % 2 == 0) RefreshMic(); // muted from Teams / the keyboard? keep the island honest

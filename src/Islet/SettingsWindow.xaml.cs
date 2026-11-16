@@ -39,6 +39,7 @@ public partial class SettingsWindow : Window
         StartupToggle.IsChecked = Startup.IsEnabled;
         BuildMonitorChoices();
         RefreshHookStatus();
+        BuildCharacterGallery();
 
         SourceInitialized += (_, _) => StyleChrome();
         ThemeManager.Changed += StyleChrome;
@@ -105,6 +106,102 @@ public partial class SettingsWindow : Window
     {
         var answer = MessageBox.Show(this, "Reset every setting to its default?", "Islet", MessageBoxButton.OKCancel, MessageBoxImage.Question);
         if (answer == MessageBoxResult.OK) _settings.CopyFrom(new IslandSettings());
+    }
+
+    // ------------------------------------------------------------------ character gallery
+
+    private readonly System.Collections.Generic.List<(CharacterKind kind, CharacterHost host, Border card)> _previews = new();
+    private System.Windows.Threading.DispatcherTimer? _previewTimer;
+    private MascotMood _previewMood = MascotMood.Idle;
+    private double _previewTime;
+
+    /// <summary>One card per character with a live, animated preview; click to choose.</summary>
+    private void BuildCharacterGallery()
+    {
+        var reactions = new (string label, MascotMood mood)[]
+        {
+            ("Idle", MascotMood.Idle), ("Music", MascotMood.Vibing), ("Working", MascotMood.Focused),
+            ("Question", MascotMood.Curious), ("Done", MascotMood.Happy), ("Asleep", MascotMood.Sleepy), ("Dizzy", MascotMood.Dizzy),
+        };
+        foreach (var (label, mood) in reactions)
+        {
+            var choice = new RadioButton { Style = (Style)FindResource("Segment"), GroupName = "Reaction", Content = label, IsChecked = mood == MascotMood.Idle };
+            choice.Checked += (_, _) =>
+            {
+                _previewMood = mood;
+                foreach (var p in _previews) p.host.Mood = mood;
+            };
+            Reactions.Children.Add(choice);
+        }
+
+        foreach (var kind in Enum.GetValues<CharacterKind>())
+        {
+            var host = new CharacterHost { Kind = kind };
+            var stage = new Border
+            {
+                Height = 96,
+                CornerRadius = new CornerRadius(14),
+                Child = new Viewbox { Width = 84, Child = host },
+            };
+            stage.SetResourceReference(Border.BackgroundProperty, "IslandBg");
+
+            var name = new TextBlock { Text = kind.ToString(), FontWeight = FontWeights.SemiBold, FontSize = 14, Margin = new Thickness(2, 10, 0, 2) };
+            var about = new TextBlock { Text = CharacterHost.Describe(kind), FontSize = 11.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(2, 0, 0, 0) };
+            about.SetResourceReference(TextBlock.ForegroundProperty, "Dim");
+
+            var card = new Border
+            {
+                Width = 190,
+                Margin = new Thickness(0, 0, 12, 12),
+                Padding = new Thickness(10),
+                CornerRadius = new CornerRadius(18),
+                BorderThickness = new Thickness(2),
+                Cursor = System.Windows.Input.Cursors.Hand,
+                Child = new StackPanel { Children = { stage, name, about } },
+            };
+            card.SetResourceReference(Border.BackgroundProperty, "Card");
+            card.MouseLeftButtonUp += (_, _) =>
+            {
+                _settings.Character = kind;
+                _settings.ShowMascot = true;
+                HighlightSelected();
+            };
+            Gallery.Children.Add(card);
+            _previews.Add((kind, host, card));
+        }
+        HighlightSelected();
+
+        // Keep the previews alive: eyes follow the mouse, "Music" makes them bob.
+        _previewTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+        _previewTimer.Tick += (_, _) =>
+        {
+            if (!PageCharacter.IsVisible) return;
+            _previewTime += 0.05;
+            double beat = _previewMood == MascotMood.Vibing ? Math.Max(0, Math.Sin(_previewTime * 7.5)) * 0.9 : 0;
+            var mouse = System.Windows.Input.Mouse.GetPosition(this);
+            foreach (var (_, host, _) in _previews)
+            {
+                Vector look = default;
+                try
+                {
+                    var c = host.TranslatePoint(new Point(host.ActualWidth / 2, host.ActualHeight / 2), this);
+                    look = new Vector(Math.Clamp((mouse.X - c.X) / 300, -1, 1), Math.Clamp((mouse.Y - c.Y) / 200, -1, 1));
+                }
+                catch { /* not laid out yet */ }
+                host.Tick(look, beat);
+            }
+        };
+        _previewTimer.Start();
+        Closed += (_, _) => _previewTimer.Stop();
+    }
+
+    private void HighlightSelected()
+    {
+        foreach (var (kind, _, card) in _previews)
+        {
+            if (kind == _settings.Character && _settings.ShowMascot) card.SetResourceReference(Border.BorderBrushProperty, "Accent");
+            else card.BorderBrush = Brushes.Transparent;
+        }
     }
 
     // ------------------------------------------------------------------ AI agents

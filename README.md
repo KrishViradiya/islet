@@ -10,7 +10,7 @@ or camera, a file shelf and clipboard history. Hover it to expand; it peeks on i
 
 <p align="center">
   <img src="docs/pill-activity.png" width="600" alt="Folded island showing a training run at 35%"><br>
-  <img src="docs/agent-approval.png" width="560" alt="Claude Code asking to run git push, with Allow and Deny buttons on the island">
+  <img src="docs/home.png" width="680" alt="The opened island: media, a 2x2 action grid, live chips for a timer, a download and a build, and a volume bar">
 </p>
 
 ## Download
@@ -26,10 +26,14 @@ Uninstall from **Settings → Apps** like any other app; it removes its autostar
 
 | | |
 |---|---|
-| <img src="docs/clipboard.png" width="420" alt="Clipboard tab"> | <img src="docs/agent-done.png" width="420" alt="Claude finished: the island peeks and drops a green bead"> |
+| <img src="docs/live.png" width="420" alt="Live tab with a timer, a download and a build"> | <img src="docs/characters.png" width="300" alt="Characters: Blip, Mochi, Sprout and Orbit"> |
+| <img src="docs/agent-approval.png" width="420" alt="Claude Code asking to run git push, with Allow and Deny on the island"> | <img src="docs/clipboard.png" width="420" alt="Clipboard tab"> |
 
-## New in 0.4 — everyday helpers
+## New in 0.4
 
+- **A calmer, scalable layout** — Home is a fixed dashboard (urgent banner · media + 2×2 actions · live chips ·
+  volume bar); everything ongoing lives on the new **Live** tab with a badge.
+- **Characters** — Blip, Mochi, Sprout or Orbit, each reacting to music, agents, timers and you (Settings → Character).
 - **Meeting mode** — call timer and a big mute button whenever an app uses your mic; **Ctrl+Alt+M** mutes your mic everywhere.
 - **Timers & focus** — one tap, countdown ring in the pill, "time's up" card with +5 min.
 - **Downloads** — live progress from any browser, then open / show / drag the file anywhere.
@@ -116,6 +120,7 @@ src/Islet/
   App.xaml(.cs)            startup, single instance, update checks, shared styles
   IslandWindow.xaml(.cs)   the island: springs, liquid edge, tabs, hover / drag-drop
   MascotView.xaml(.cs)     Blip
+  Characters.cs            Mochi, Sprout, Orbit + the CharacterHost that swaps them
   SettingsWindow.xaml(.cs) customization
   TrayIcon.cs              tray menu (Settings, updates, Quit)
   Core/                    view model, settings, theme, springs, liquid engine, updater
