@@ -30,6 +30,10 @@ public sealed class IslandViewModel : Observable, IDisposable
     private DateTime _flashUntil;
     private WeatherNow? _weatherNow;
     private int _ticks;
+    private bool? _micMuted;
+    private bool _timerPickerOpen;
+    private int _customMinutes = 20;
+    private CompactKind _primary = CompactKind.Idle, _secondary = CompactKind.Idle;
 
     public IslandSettings Settings { get; }
     public MediaState Media { get; } = new();
@@ -45,6 +49,25 @@ public sealed class IslandViewModel : Observable, IDisposable
     public AgentHub Agents { get; }
     public ShelfModule ShelfModule { get; }
     public ClipboardModule Clipboard { get; }
+    public TimerModule TimerHub { get; } = new();
+    public DownloadsModule Downloads { get; }
+    public DeviceModule Devices { get; }
+    public ObservableCollection<IsletTimer> Timers => TimerHub.Timers;
+
+    public ICommand ToggleMicCommand { get; }
+    public ICommand StartTimerCommand { get; }
+    public ICommand CustomTimerCommand { get; }
+    public ICommand TimerPauseCommand { get; }
+    public ICommand TimerAddCommand { get; }
+    public ICommand TimerRemoveCommand { get; }
+    public ICommand ToggleTimerPickerCommand { get; }
+    public ICommand SnipCommand { get; }
+    public ICommand OpenDownloadsCommand { get; }
+    public ICommand OpenFileCommand { get; }
+    public ICommand ShowInFolderCommand { get; }
+    public ICommand DismissDownloadCommand { get; }
+    public ICommand ShelveDownloadCommand { get; }
+    public ICommand DismissWelcomeCommand { get; }
 
     public ICommand PlayPauseCommand { get; }
     public ICommand NextCommand { get; }
@@ -74,6 +97,10 @@ public sealed class IslandViewModel : Observable, IDisposable
     public event Action<Brush>? Jolt;
     /// <summary>An agent is waiting for Allow / Deny: open the island and hold it open.</summary>
     public event Action? ApprovalPending;
+    /// <summary>A timer ran out: open the island with the "time's up" card.</summary>
+    public event Action? AlarmRinging;
+    /// <summary>Flash the rim in this colour (mic muted / unmuted…).</summary>
+    public event Action<Brush>? Flash;
 
     public IslandViewModel(Dispatcher ui, IslandSettings settings)
     {
@@ -87,6 +114,70 @@ public sealed class IslandViewModel : Observable, IDisposable
         Clipboard = new ClipboardModule(Clips, settings, ui);
         _server = new LiveActivityServer(Hub, Agents, ui);
         _server.Failed += message => _ui.InvokeAsync(() => ProblemReported?.Invoke(message));
+        Downloads = new DownloadsModule(ui);
+        Devices = new DeviceModule(ui);
+        _server.StartTimer = (minutes, label) =>
+        {
+            if (!Settings.ShowTimers) return false;
+            TimerHub.Start(minutes, string.IsNullOrWhiteSpace(label) ? null : AgentSession.Clip(label, 30));
+            Raise(nameof(HasTimers));
+            return true;
+        };
+
+        // ---- v0.4 helpers
+        ToggleMicCommand = new RelayCommand(_ => ToggleMic());
+        StartTimerCommand = new RelayCommand(p =>
+        {
+            if (int.TryParse(p as string, out var minutes)) StartTimer(minutes);
+        });
+        CustomTimerCommand = new RelayCommand(_ => StartTimer(_customMinutes));
+        TimerPauseCommand = new RelayCommand(p => { if (p is IsletTimer t) { t.TogglePause(); RecomputeCompact(); } });
+        TimerAddCommand = new RelayCommand(p =>
+        {
+            if (p is IsletTimer t) { t.Add(TimeSpan.FromMinutes(t.IsDone ? 5 : 1)); RecomputeCompact(); }
+        });
+        TimerRemoveCommand = new RelayCommand(p => { if (p is IsletTimer t) TimerHub.Remove(t); });
+        ToggleTimerPickerCommand = new RelayCommand(_ => TimerPickerOpen = !TimerPickerOpen);
+        SnipCommand = new RelayCommand(_ => Shell("ms-screenclip:"));
+        OpenDownloadsCommand = new RelayCommand(_ => Shell(Downloads.Folder));
+        OpenFileCommand = new RelayCommand(p => { if (p is DownloadItem d && d.IsDone) Shell(d.Path); });
+        ShowInFolderCommand = new RelayCommand(p =>
+        {
+            if (p is DownloadItem d && d.IsDone)
+                try { Process.Start("explorer.exe", $"/select,\"{d.Path}\""); } catch (Exception ex) { Log.Error("show in folder", ex); }
+        });
+        DismissDownloadCommand = new RelayCommand(p => { if (p is DownloadItem d) Downloads.Dismiss(d); });
+        ShelveDownloadCommand = new RelayCommand(p =>
+        {
+            if (p is DownloadItem d && d.IsDone) { ShelfModule.Add(new[] { d.Path }); Celebrate?.Invoke(ThemeManager.Accent); }
+        });
+        DismissWelcomeCommand = new RelayCommand(_ => { Settings.Onboarded = true; Raise(nameof(ShowWelcome)); });
+
+        TimerHub.Changed += RecomputeCompact;
+        TimerHub.Finished += t =>
+        {
+            if (!Settings.ShowTimers) return;
+            if (Settings.TimerSound) { SystemSounds.Exclamation.Play(); }
+            FlashMood(MascotMood.Alarmed, 3);
+            Celebrate?.Invoke(Palette.Orange);
+            Tab = IslandTab.Home;
+            AlarmRinging?.Invoke();
+        };
+        Downloads.Changed += RecomputeCompact;
+        Downloads.Completed += d =>
+        {
+            if (!Settings.ShowDownloads) return;
+            Celebrate?.Invoke(Palette.Green);
+            PeekRequested?.Invoke(new PeekInfo("Downloaded", $"{d.Name} · {d.Detail}", "", d.Icon, Palette.Green));
+        };
+        Devices.Happened += e =>
+        {
+            if (!Settings.DevicePeeks) return;
+            if (e.Accent == Palette.Green) Celebrate?.Invoke(Palette.Green);
+            else if (e.Accent == Palette.Red || e.Accent == Palette.Orange) Flash?.Invoke(e.Accent);
+            PeekRequested?.Invoke(new PeekInfo(e.Title, e.Subtitle, e.Glyph, null, e.Accent, e.Level));
+        };
+        PrivacyUses.CollectionChanged += (_, _) => { RaiseCall(); RecomputeCompact(); };
 
         PlayPauseCommand = new RelayCommand(_ => MediaModule.PlayPause());
         NextCommand = new RelayCommand(_ => MediaModule.Next());
@@ -191,7 +282,10 @@ public sealed class IslandViewModel : Observable, IDisposable
         _ = MediaModule.StartAsync();
         Privacy.Start();
         _server.Start();
+        Downloads.Start();
+        Devices.Start();
         RefreshVolume();
+        RefreshMic();
         UpdateAccent();
         RefreshWeather();
         Tick();
@@ -255,15 +349,60 @@ public sealed class IslandViewModel : Observable, IDisposable
     public string VolumeText => _muted ? "Muted" : $"{_volume * 100:0}";
     public string VolumeGlyph => _muted || _volume < 0.01 ? "" : _volume < 0.34 ? "" : _volume < 0.67 ? "" : "";
 
-    // ---- what the collapsed pill shows (highest priority first)
+    // ---- what the collapsed pill shows: the most important thing in the pill, the next one in the bubble
     public AgentSession? CompactAgent { get; private set; }
     public LiveActivity? CompactActivity { get => _compactActivity; private set => Set(ref _compactActivity, value); }
-    public bool ShowCompactAgent => CompactAgent != null;
-    public bool ShowCompactActivity => !ShowCompactAgent && _compactActivity != null;
-    public bool ShowCompactMedia => !ShowCompactAgent && _compactActivity == null && Settings.ShowMedia && Media.HasSession && Media.IsPlaying;
-    public bool ShowCompactIdle => !ShowCompactAgent && !ShowCompactActivity && !ShowCompactMedia;
+    public CompactKind Primary => _primary;
+    /// <summary>The second live thing, shown in the bubble that splits off the island (Idle = no bubble).</summary>
+    public CompactKind Secondary => _secondary;
+    public bool HasBubble => _secondary != CompactKind.Idle;
+    public bool ShowCompactAgent => _primary == CompactKind.Agent;
+    public bool ShowCompactCall => _primary == CompactKind.Call;
+    public bool ShowCompactTimer => _primary == CompactKind.Timer;
+    public bool ShowCompactDownload => _primary == CompactKind.Download;
+    public bool ShowCompactActivity => _primary == CompactKind.Activity;
+    public bool ShowCompactMedia => _primary == CompactKind.Media;
+    public bool ShowCompactIdle => _primary == CompactKind.Idle;
     public bool MascotInPill => Settings.ShowMascot && (ShowCompactIdle || ShowCompactAgent);
     public bool ClockInPillVisible => ShowCompactIdle && Settings.ClockInPill;
+
+    // ---- meeting mode
+    /// <summary>The app using the microphone right now (a call), if any.</summary>
+    public PrivacyUse? CallUse => Settings.ShowCalls ? PrivacyUses.Where(u => u.IsMicrophone).OrderBy(u => u.Since).FirstOrDefault() : null;
+    public bool InCall => CallUse != null;
+    public string CallApp => CallUse?.AppName ?? "";
+    public string CallDuration
+    {
+        get
+        {
+            if (CallUse is not { } c) return "";
+            var t = DateTime.Now - c.Since;
+            return t.TotalHours >= 1 ? t.ToString(@"h\:mm\:ss") : t.ToString(@"m\:ss");
+        }
+    }
+    public bool CameraOn => PrivacyUses.Any(u => u.IsCamera);
+    public bool MicKnown => _micMuted.HasValue;
+    public bool MicMuted => _micMuted == true;
+    public string MicGlyph => MicMuted ? "" : "";
+    public string MicLabel => MicMuted ? "Unmute" : "Mute";
+    public Brush MicBrush => MicMuted ? Palette.Red : Palette.Green;
+
+    // ---- timers
+    public IsletTimer? RunningTimer => TimerHub.Ringing ?? TimerHub.Running;
+    public bool HasTimers => Timers.Count > 0;
+    public bool TimerPickerOpen { get => _timerPickerOpen; set => Set(ref _timerPickerOpen, value); }
+    public int CustomMinutes
+    {
+        get => _customMinutes;
+        set { if (Set(ref _customMinutes, Math.Clamp(value, 1, 180))) Raise(nameof(CustomLabel)); }
+    }
+    public string CustomLabel => $"{_customMinutes} min";
+
+    // ---- downloads
+    public DownloadItem? ActiveDownload => Settings.ShowDownloads ? Downloads.Active : null;
+
+    // ---- first run
+    public bool ShowWelcome => !Settings.Onboarded;
     public string CompactAgentText => Agents.Approvals.FirstOrDefault() is { } a
         ? $"{a.Agent} · approve {a.Tool}?"
         : CompactAgent is { } s ? $"{s.Agent} · {s.Action}" : "";
@@ -321,6 +460,52 @@ public sealed class IslandViewModel : Observable, IDisposable
         Raise(nameof(VolumeGlyph));
     }
 
+    /// <summary>Mutes / unmutes the microphone for every app (Ctrl+Alt+M, the call card, quick actions).</summary>
+    public void ToggleMic()
+    {
+        RefreshMic();
+        if (!MicKnown)
+        {
+            Peek("No microphone found", "Plug one in and try again", "", Palette.Gray);
+            return;
+        }
+        bool mute = !MicMuted;
+        AudioVolume.SetMicMuted(mute);
+        RefreshMic();
+        Flash?.Invoke(mute ? Palette.Red : Palette.Green);
+        PeekRequested?.Invoke(new PeekInfo(mute ? "Microphone muted" : "Microphone on",
+            mute ? "Nobody can hear you · Ctrl+Alt+M to unmute" : "You're live", MicGlyph, null, MicBrush));
+    }
+
+    private void RefreshMic()
+    {
+        var muted = AudioVolume.MicMuted();
+        if (muted == _micMuted) return;
+        _micMuted = muted;
+        foreach (var p in new[] { nameof(MicKnown), nameof(MicMuted), nameof(MicGlyph), nameof(MicLabel), nameof(MicBrush) }) Raise(p);
+        CompactChanged?.Invoke();
+    }
+
+    private void RaiseCall()
+    {
+        foreach (var p in new[] { nameof(CallUse), nameof(InCall), nameof(CallApp), nameof(CallDuration), nameof(CameraOn) }) Raise(p);
+    }
+
+    public void StartTimer(int minutes)
+    {
+        if (minutes <= 0) return;
+        TimerHub.Start(minutes);
+        TimerPickerOpen = false;
+        Celebrate?.Invoke(ThemeManager.Accent);
+        Raise(nameof(HasTimers));
+    }
+
+    private static void Shell(string target)
+    {
+        try { Process.Start(new ProcessStartInfo(target) { UseShellExecute = true }); }
+        catch (Exception ex) { Log.Error("shell", ex); }
+    }
+
     private static void OpenSpotify()
     {
         try { Process.Start(new ProcessStartInfo("spotify:") { UseShellExecute = true }); }
@@ -341,6 +526,8 @@ public sealed class IslandViewModel : Observable, IDisposable
             RefreshWeather();
         Raise(nameof(TabsVisible));
         Raise(nameof(BatteryVisible));
+        Raise(nameof(ShowWelcome));
+        RaiseCall();
         RaiseWeather();
         RaiseMediaVisibility();
         RecomputeCompact();
@@ -354,6 +541,10 @@ public sealed class IslandViewModel : Observable, IDisposable
         Raise(nameof(LyricsVisible));
     }
 
+    /// <summary>
+    /// Ranks everything that's live. The winner fills the pill; the runner-up gets the split bubble.
+    /// Urgent things (an agent waiting for you, a ringing timer) always win.
+    /// </summary>
     private void RecomputeCompact()
     {
         CompactAgent = Settings.ShowAgents
@@ -364,9 +555,29 @@ public sealed class IslandViewModel : Observable, IDisposable
         CompactActivity = Settings.ShowActivities
             ? Activities.FirstOrDefault(a => a.IsRunning) ?? Activities.FirstOrDefault()
             : null;
-        foreach (var p in new[] { nameof(CompactAgent), nameof(ShowCompactAgent), nameof(ShowCompactActivity), nameof(ShowCompactMedia),
-                                  nameof(ShowCompactIdle), nameof(MascotInPill), nameof(ClockInPillVisible),
-                                  nameof(CompactAgentText), nameof(CompactAgentBrush) })
+
+        bool agentUrgent = CompactAgent != null && (Agents.Approvals.Count > 0 || CompactAgent.Status == AgentStatus.NeedsYou);
+        bool timers = Settings.ShowTimers && RunningTimer != null;
+        var ranked = new (bool live, CompactKind kind)[]
+        {
+            (agentUrgent, CompactKind.Agent),
+            (timers && TimerHub.Ringing != null, CompactKind.Timer),
+            (InCall, CompactKind.Call),
+            (CompactAgent != null, CompactKind.Agent),
+            (timers, CompactKind.Timer),
+            (ActiveDownload != null, CompactKind.Download),
+            (CompactActivity != null, CompactKind.Activity),
+            (Settings.ShowMedia && Media.HasSession && Media.IsPlaying, CompactKind.Media),
+        };
+        var live = ranked.Where(r => r.live).Select(r => r.kind).Distinct().ToList();
+        _primary = live.Count > 0 ? live[0] : CompactKind.Idle;
+        _secondary = Settings.SplitIsland && live.Count > 1 ? live[1] : CompactKind.Idle;
+
+        foreach (var p in new[] { nameof(CompactAgent), nameof(Primary), nameof(Secondary), nameof(HasBubble),
+                                  nameof(ShowCompactAgent), nameof(ShowCompactCall), nameof(ShowCompactTimer), nameof(ShowCompactDownload),
+                                  nameof(ShowCompactActivity), nameof(ShowCompactMedia), nameof(ShowCompactIdle),
+                                  nameof(MascotInPill), nameof(ClockInPillVisible), nameof(CompactAgentText), nameof(CompactAgentBrush),
+                                  nameof(RunningTimer), nameof(HasTimers), nameof(ActiveDownload) })
             Raise(p);
         RecomputeMood();
         CompactChanged?.Invoke();
@@ -385,7 +596,8 @@ public sealed class IslandViewModel : Observable, IDisposable
         var current = Agents.Current;
         Mood = DateTime.Now < _flashUntil ? _flashMood
             : Settings.ShowAgents && (Agents.Approvals.Count > 0 || current?.Status == AgentStatus.NeedsYou) ? MascotMood.Curious
-            : Settings.ShowAgents && current?.Status == AgentStatus.Working || Activities.Any(a => a.IsRunning) ? MascotMood.Focused
+            : Settings.ShowAgents && current?.Status == AgentStatus.Working || Activities.Any(a => a.IsRunning)
+              || (Settings.ShowTimers && TimerHub.Running?.IsRunning == true) ? MascotMood.Focused
             : Settings.ShowMedia && Media.IsPlaying ? MascotMood.Vibing
             : IsAway ? MascotMood.Sleepy
             : MascotMood.Idle;
@@ -435,7 +647,12 @@ public sealed class IslandViewModel : Observable, IDisposable
         DateText = now.ToString("ddd, MMM d");
         Hub.Tick();
         Agents.Tick();
+        TimerHub.Tick();
         if (CompactAgent != null) Raise(nameof(CompactAgentText));
+        if (InCall) Raise(nameof(CallDuration));
+        if (_ticks % 2 == 0) RefreshMic(); // muted from Teams / the keyboard? keep the island honest
+        if (_ticks % 10 == 0) { Downloads.Tick(); RecomputeCompact(); }
+        if (_ticks % 30 == 0) Devices.Tick();
 
         // Away = no keyboard/mouse for 3 minutes (and nothing playing). Coming back gets a happy hop.
         bool away = Settings.SagWhenAway && Native.IdleSeconds() > 180 && !Media.IsPlaying;
@@ -482,5 +699,7 @@ public sealed class IslandViewModel : Observable, IDisposable
         _server.Dispose();
         Privacy.Dispose();
         MediaModule.Dispose();
+        Downloads.Dispose();
+        Devices.Dispose();
     }
 }

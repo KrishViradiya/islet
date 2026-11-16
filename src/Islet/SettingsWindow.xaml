@@ -325,6 +325,16 @@
                                         <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding ShowMascot}"/>
                                     </Grid>
                                 </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Split island" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="When two things are live (say a timer and music), the second one pops out as its own little bubble" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding SplitIsland}"/>
+                                    </Grid>
+                                </Border>
                                 <Border Style="{StaticResource Row}" BorderThickness="0">
                                     <Grid>
                                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
@@ -567,6 +577,69 @@
                     <!-- ===================== MODULES ===================== -->
                     <StackPanel x:Name="PageModules" Visibility="Collapsed">
                         <TextBlock Text="Modules" Style="{StaticResource PageTitle}"/>
+
+                        <TextBlock Text="EVERYDAY" Style="{StaticResource Section}"/>
+                        <Border Style="{StaticResource Group}">
+                            <StackPanel>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Meeting mode" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="When an app uses your mic (Teams, Zoom, Meet…) the island shows the call time and a big mute button" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding ShowCalls}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Ctrl + Alt + M mutes your microphone" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Works in every app, even when the island is folded" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding MicHotkey}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Timers" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Quick timers and focus sessions that count down in the pill" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding ShowTimers}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Sound when a timer ends" Style="{StaticResource RowTitle}" VerticalAlignment="Center"/>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding TimerSound}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Downloads" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Watches your Downloads folder: live progress, then open, show or drag the file anywhere" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding ShowDownloads}"/>
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource Row}" BorderThickness="0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Devices and battery" Style="{StaticResource RowTitle}"/>
+                                            <TextBlock Text="Headphones connecting (with their battery level), charger plugged in or out, low-battery warnings" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Style="{StaticResource Toggle}" IsChecked="{Binding DevicePeeks}"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
 
                         <TextBlock Text="WEATHER" Style="{StaticResource Section}"/>
                         <Border Style="{StaticResource Group}">

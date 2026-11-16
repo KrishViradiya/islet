@@ -7,6 +7,9 @@ namespace Islet.Core;
 
 public enum IslandTab { Home, Shelf, Clipboard }
 
+/// <summary>What a slot of the folded island is showing. Earlier = more important.</summary>
+public enum CompactKind { Idle, Agent, Call, Timer, Download, Activity, Media }
+
 /// <summary>What the island shows briefly when something happens. Progress (0..1) adds a bar, e.g. for volume.</summary>
 public sealed record PeekInfo(string Title, string Subtitle, string Glyph, ImageSource? Image, Brush Accent, double? Progress = null);
 
@@ -206,7 +209,13 @@ public sealed class LiveActivity : Observable
 }
 
 /// <summary>An app currently using the microphone / camera / location.</summary>
-public sealed record PrivacyUse(string Key, string AppName, string CapabilityLabel, string Glyph, Brush Accent);
+public sealed record PrivacyUse(string Key, string AppName, string CapabilityLabel, string Glyph, Brush Accent)
+{
+    /// <summary>When this app started using the device (kept across polls) — powers the call timer.</summary>
+    public DateTime Since { get; init; } = DateTime.Now;
+    public bool IsMicrophone => CapabilityLabel == "microphone";
+    public bool IsCamera => CapabilityLabel == "camera";
+}
 
 public sealed class ShelfItem
 {

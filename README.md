@@ -28,6 +28,17 @@ Uninstall from **Settings → Apps** like any other app; it removes its autostar
 |---|---|
 | <img src="docs/clipboard.png" width="420" alt="Clipboard tab"> | <img src="docs/agent-done.png" width="420" alt="Claude finished: the island peeks and drops a green bead"> |
 
+## New in 0.4 — everyday helpers
+
+- **Meeting mode** — call timer and a big mute button whenever an app uses your mic; **Ctrl+Alt+M** mutes your mic everywhere.
+- **Timers & focus** — one tap, countdown ring in the pill, "time's up" card with +5 min.
+- **Downloads** — live progress from any browser, then open / show / drag the file anywhere.
+- **Devices** — headphones connected (with battery), charger in / out, low-battery warnings.
+- **Split island** — two live things? The second one gets its own bubble.
+- **Quick actions** — Mic · Timer · Snip · Downloads on the Home tab, plus a first-run welcome.
+
+See the [changelog](CHANGELOG.md).
+
 ## What makes it different
 
 | Feature | What it does | Why it's new on Windows |
@@ -159,6 +170,7 @@ with Velopack, and publishes it to GitHub Releases. Installed copies update them
 | `POST` | `/activities` | create or update: `{"id"?, "title", "subtitle"?, "progress"?: 0..1 or null, "state"?: "running" \| "success" \| "error"}` returns `{"id"}` |
 | `POST` | `/activities/{id}` | update fields of an existing activity |
 | `DELETE` | `/activities/{id}` | dismiss |
+| `POST` | `/timer?minutes=25&label=Focus` | start a timer |
 
 `progress: null` means indeterminate (elapsed time is shown instead). Finished activities linger for 8 s.
 
@@ -210,7 +222,7 @@ websites you visit can't post to your island. Any local program can, which is th
 ## Roadmap ideas
 
 1. **Notification mirroring**: show toasts in the island (needs app packaging/MSIX for `UserNotificationListener`).
-2. **Meeting mode**: next calendar event with a countdown and "join" button.
-3. **Focus timer**: Pomodoro as a built-in Live Activity.
+2. **Calendar**: next meeting with a countdown and a "join" button.
+3. **Screenshot cards**: a fresh screenshot appears as a card you can drag into a chat.
 4. **Plugins**: run user scripts on a schedule and turn their output into activities (CI status, server health).
 5. **winget**: `winget install Islet` once releases are stable.

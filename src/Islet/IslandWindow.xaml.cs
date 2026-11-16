@@ -25,11 +25,15 @@ public partial class IslandWindow : Window
     private const double BaseWindowWidth = 700, BaseWindowHeight = 660;
     private const double ExpandedWidth = 480, ExpandedPadding = 22; // panel is 448 wide + 16 each side; 12 above, ~10 below
     private const double PeekWidth = 390, PeekHeight = 66;
-    private const int HotkeyId = 0xB001;
+    private const int HotkeyId = 0xB001, MicHotkeyId = 0xB002;
+    private const double BubbleGap = 6;
 
     private readonly IslandViewModel _vm;
     private readonly IslandSettings _s;
     private readonly Spring _w = new(), _h = new(), _r = new();
+    private readonly Spring _bubbleOut = new(), _bubbleSize = new(); // the split bubble: how far out, how big (0..1)
+    private CompactKind _lastPrimary = CompactKind.Idle;
+    private bool _welcomePinned;
     private readonly SpringAnimator _animator;
     private readonly DispatcherTimer _hoverIn, _peekTimer, _dragLeave, _watch;
     private readonly DateTime _startedAt = DateTime.Now;
@@ -58,7 +62,7 @@ public partial class IslandWindow : Window
         _s = vm.Settings;
         DataContext = vm;
 
-        _animator = new SpringAnimator(new[] { _w, _h, _r }, ApplyShape);
+        _animator = new SpringAnimator(new[] { _w, _h, _r, _bubbleOut, _bubbleSize }, ApplyShape);
         _w.Snap(130);
         _h.Snap(CompactHeight);
         _r.Snap(CompactHeight / 2);
@@ -79,6 +83,8 @@ public partial class IslandWindow : Window
         vm.Celebrate += brush => { DropBead(brush, 8, 0.5); FlashRim(brush); };
         vm.Jolt += brush => { _liquid.Shake(55); KickLiquid(); FlashRim(brush); };
         vm.ApprovalPending += () => { if (!_hidden) SetMode(Mode.Expanded); UpdateRim(); };
+        vm.AlarmRinging += () => { if (!_hidden) SetMode(Mode.Expanded); };
+        vm.Flash += FlashRim;
         vm.Agents.Approvals.CollectionChanged += (_, _) => UpdateRim();
         PillMascot.Poked += vm.Poke;
         HeaderMascot.Poked += vm.Poke;
@@ -113,6 +119,13 @@ public partial class IslandWindow : Window
             UpdateRim();
             _watch.Start();
             _drip.Start();
+
+            // First run: open up and say hello (stays open until "Got it").
+            if (_vm.ShowWelcome)
+            {
+                var hello = OneShot(1500, () => { _welcomePinned = true; SetPinned(true); });
+                hello.Start();
+            }
         };
         DpiChanged += (_, _) => Dispatcher.InvokeAsync(Place, DispatcherPriority.Background);
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged += (_, _) => Dispatcher.InvokeAsync(Place);
@@ -143,7 +156,8 @@ public partial class IslandWindow : Window
             case nameof(IslandSettings.Motion): ApplyMotion(); break;
             case nameof(IslandSettings.CollapsedOpacity):
             case nameof(IslandSettings.ExpandedOpacity): ApplyOpacity(); break;
-            case nameof(IslandSettings.HotkeyEnabled): RegisterHotkey(); break;
+            case nameof(IslandSettings.HotkeyEnabled):
+            case nameof(IslandSettings.MicHotkey): RegisterHotkey(); break;
             case nameof(IslandSettings.HoverDelayMs): _hoverIn.Interval = TimeSpan.FromMilliseconds(Math.Max(1, _s.HoverDelayMs)); break;
             case nameof(IslandSettings.HideInFullscreen): if (!_s.HideInFullscreen) SetHidden(false); break;
             case nameof(IslandSettings.MusicGlow): UpdateGlow(); break;
@@ -198,16 +212,20 @@ public partial class IslandWindow : Window
     {
         if (_hwnd == IntPtr.Zero) return;
         Native.UnregisterHotKey(_hwnd, HotkeyId);
-        if (_s.HotkeyEnabled)
-            Native.RegisterHotKey(_hwnd, HotkeyId, Native.MOD_CONTROL | Native.MOD_ALT | Native.MOD_NOREPEAT, 0x49 /* I */);
+        Native.UnregisterHotKey(_hwnd, MicHotkeyId);
+        const uint mods = Native.MOD_CONTROL | Native.MOD_ALT | Native.MOD_NOREPEAT;
+        if (_s.HotkeyEnabled) Native.RegisterHotKey(_hwnd, HotkeyId, mods, 0x49 /* I */);
+        if (_s.MicHotkey && !Native.RegisterHotKey(_hwnd, MicHotkeyId, mods, 0x4D /* M */))
+            Log.Info("Ctrl+Alt+M is taken by another app");
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        if (msg == Native.WM_HOTKEY && wParam.ToInt32() == HotkeyId)
+        if (msg != Native.WM_HOTKEY) return IntPtr.Zero;
+        switch (wParam.ToInt32())
         {
-            SetPinned(!_pinnedOpen);
-            handled = true;
+            case HotkeyId: SetPinned(!_pinnedOpen); handled = true; break;
+            case MicHotkeyId: _vm.ToggleMic(); handled = true; break;
         }
         return IntPtr.Zero;
     }
@@ -247,6 +265,9 @@ public partial class IslandWindow : Window
         double extra = _s.ShowPrivacy ? _vm.PrivacyUses.Count * 14 : 0;
         if (_vm.MascotInPill) extra += 38;
         if (_vm.ShowCompactAgent) return 320 + extra;
+        if (_vm.ShowCompactCall) return 230 + extra;
+        if (_vm.ShowCompactTimer) return 240 + extra;
+        if (_vm.ShowCompactDownload) return 320 + extra;
         if (_vm.ShowCompactActivity) return 300 + extra;
         if (_vm.ShowCompactMedia) return 220 + extra;
         double idle = 110 + (_vm.ClockInPillVisible ? 40 : 0) + (_vm.HasWeather ? 56 : 0);
@@ -260,7 +281,20 @@ public partial class IslandWindow : Window
         _w.Target = _baseW + 12 * pull;
         _h.Target = _baseH + 3 * pull;
         _r.Target = _mode == Mode.Compact ? _h.Target / 2 : _baseR;
+
+        // The bubble splits off only in the folded state; opening the island swallows it back.
+        bool bubble = _mode == Mode.Compact && _vm.HasBubble && !_hidden;
+        _bubbleOut.Target = bubble ? 1 : 0;
+        _bubbleSize.Target = bubble ? 1 : 0;
         _animator.Kick();
+
+        // A new thing took over the pill: cross-fade its content in.
+        if (_mode == Mode.Compact && _vm.Primary != _lastPrimary)
+        {
+            _lastPrimary = _vm.Primary;
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+            CompactLayer.BeginAnimation(OpacityProperty, new DoubleAnimation(0.15, 1, TimeSpan.FromMilliseconds(320)) { EasingFunction = ease });
+        }
     }
 
     /// <summary>Runs every frame while springs move: rebuilds the island outline and the content clip.</summary>
@@ -318,12 +352,40 @@ public partial class IslandWindow : Window
 
         Island.Width = w + 2 * s;
         Island.Height = h;
+        PlaceBubble(w, s);
         ClipHost.Margin = new Thickness(s, 0, 0, 0);
         ClipHost.Width = w;
         ClipHost.Height = h;
         ClipHost.Clip = IsNotch
             ? new RectangleGeometry(new Rect(0, -r, w, h + r), r, r) // top corners hidden above the screen edge
             : new RectangleGeometry(new Rect(0, 0, w, h), r, r);
+    }
+
+    /// <summary>
+    /// The split bubble slides out from behind the island's right side and grows, like a droplet
+    /// separating. Notch style: a small tab hanging from the edge; floating style: a circle.
+    /// </summary>
+    private void PlaceBubble(double w, double s)
+    {
+        double size = CompactHeight;
+        double grow = Math.Clamp(_bubbleSize.Value, 0, 1.2);
+        double k = _s.Scale;
+
+        Bubble.LayoutTransform = Island.LayoutTransform;
+        Bubble.Margin = Island.Margin;
+        Bubble.Width = size * Math.Max(0.35, grow);
+        Bubble.Height = size;
+        BubbleShape.CornerRadius = IsNotch ? new CornerRadius(0, 0, size / 2, size / 2) : new CornerRadius(size / 2);
+        BubbleContentScale.ScaleX = BubbleContentScale.ScaleY = Math.Clamp(grow, 0, 1);
+
+        // Tucked behind the island at 0, fully separated at 1 (window-space pixels, so scale by k).
+        double tucked = (w / 2) - size / 2;
+        double separated = w / 2 + s + BubbleGap + size / 2;
+        BubbleShift.X = k * (tucked + (separated - tucked) * Math.Clamp(_bubbleOut.Value, -0.1, 1.15));
+
+        double opacity = Math.Clamp(grow * 1.4, 0, 1) * (_hidden ? 0 : _s.CollapsedOpacity);
+        Bubble.Opacity = opacity;
+        Bubble.IsHitTestVisible = opacity > 0.5;
     }
 
     /// <summary>
@@ -521,6 +583,11 @@ public partial class IslandWindow : Window
     private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(IslandViewModel.Tab)) SwitchTab();
+        if (e.PropertyName == nameof(IslandViewModel.ShowWelcome) && !_vm.ShowWelcome && _welcomePinned)
+        {
+            _welcomePinned = false;
+            SetPinned(false);
+        }
     }
 
     /// <summary>Slide + fade between tabs, direction following the tab order.</summary>
@@ -622,7 +689,8 @@ public partial class IslandWindow : Window
         DetectShake(over, local);
 
         bool busy = _draggingOut || _pinnedOpen || Mouse.Captured != null  // e.g. dragging the volume slider
-                    || _vm.Agents.Approvals.Count > 0;                     // waiting for Allow / Deny
+                    || _vm.Agents.Approvals.Count > 0                      // waiting for Allow / Deny
+                    || _vm.TimerHub.Ringing != null;                       // "time's up" until you answer
         if (_mode == Mode.Expanded && !busy)
         {
             if (over) _cursorLeftAt = null;
@@ -747,6 +815,28 @@ public partial class IslandWindow : Window
             }
             i++;
         }
+    }
+
+    // ================================================================== timers & downloads
+
+    private void CustomTimer_Wheel(object sender, MouseWheelEventArgs e)
+    {
+        int step = _vm.CustomMinutes >= 60 ? 5 : 1;
+        _vm.CustomMinutes += e.Delta > 0 ? step : -step;
+        e.Handled = true; // don't change the volume
+    }
+
+    private void Download_MouseDown(object sender, MouseButtonEventArgs e) => _dragStart = e.GetPosition(this);
+
+    /// <summary>Drag a finished download straight out of the island into a mail, chat or folder.</summary>
+    private void Download_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || sender is not FrameworkElement { Tag: Islet.Modules.DownloadItem { IsDone: true } item }) return;
+        var delta = e.GetPosition(this) - _dragStart;
+        if (Math.Abs(delta.X) < 6 && Math.Abs(delta.Y) < 6) return;
+        _draggingOut = true;
+        try { DragDrop.DoDragDrop((DependencyObject)sender, new DataObject(DataFormats.FileDrop, new[] { item.Path }), DragDropEffects.Copy | DragDropEffects.Link); }
+        finally { _draggingOut = false; }
     }
 
     // ================================================================== clipboard

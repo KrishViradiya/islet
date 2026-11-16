@@ -43,6 +43,33 @@ internal static class AudioVolume
 
     private static IAudioEndpointVolume Endpoint() => Activate<IAudioEndpointVolume>();
 
+    // ---- microphone (meeting mode): mutes the default capture devices for every app at once
+
+    /// <summary>null when there is no microphone.</summary>
+    public static bool? MicMuted()
+    {
+        try
+        {
+            Marshal.ThrowExceptionForHR(Activate<IAudioEndpointVolume>(dataFlow: 1, role: 2).GetMute(out bool muted));
+            return muted;
+        }
+        catch { return null; }
+    }
+
+    public static void SetMicMuted(bool muted)
+    {
+        // The "communications" and "default" microphones can differ (headset vs. webcam): mute both.
+        foreach (var role in new[] { 2, 0 })
+        {
+            try
+            {
+                var ctx = Guid.Empty;
+                Activate<IAudioEndpointVolume>(dataFlow: 1, role: role).SetMute(muted, ref ctx);
+            }
+            catch { /* no such device */ }
+        }
+    }
+
     // ---- peak meter: how loud the speakers are right now (drives the liquid music ripple)
     private static IAudioMeterInformation? _meter;
     private static DateTime _meterRefreshAt;
@@ -67,10 +94,12 @@ internal static class AudioVolume
         }
     }
 
-    private static T Activate<T>() where T : class
+    /// <param name="dataFlow">0 = speakers (eRender), 1 = microphones (eCapture).</param>
+    /// <param name="role">0 = eConsole, 1 = eMultimedia, 2 = eCommunications.</param>
+    private static T Activate<T>(int dataFlow = 0, int role = 1) where T : class
     {
         var enumerator = (IMMDeviceEnumerator)new MMDeviceEnumeratorComObject();
-        Marshal.ThrowExceptionForHR(enumerator.GetDefaultAudioEndpoint(0 /* eRender */, 1 /* eMultimedia */, out var device));
+        Marshal.ThrowExceptionForHR(enumerator.GetDefaultAudioEndpoint(dataFlow, role, out var device));
         var iid = typeof(T).GUID;
         Marshal.ThrowExceptionForHR(device.Activate(ref iid, 23 /* CLSCTX_ALL */, IntPtr.Zero, out var obj));
         return (T)obj;

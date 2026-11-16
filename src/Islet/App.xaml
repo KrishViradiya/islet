@@ -10,6 +10,8 @@
         <core:InverseBoolToVisibility x:Key="NotVis"/>
         <core:EnumBoolConverter x:Key="Is"/>
         <core:UnitConverter x:Key="Unit"/>
+        <core:RingDashConverter x:Key="Ring"/>
+        <core:EnumVisibilityConverter x:Key="IsVis"/>
         <FontFamily x:Key="Icons">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
 
         <!-- Round icon button -->
@@ -340,6 +342,91 @@
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="Bg" Property="Background" Value="{DynamicResource CardHover}"/>
                                 <Setter Property="Foreground" Value="{DynamicResource Fg}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Quick-action tile: Content = glyph, Tag = label. Background can be overridden (e.g. red when muted). -->
+        <Style x:Key="Tile" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource Fg}"/>
+            <Setter Property="Background" Value="{DynamicResource Card}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="16"/>
+                            <Border x:Name="Hover" Background="{DynamicResource Card}" CornerRadius="16" Opacity="0"/>
+                            <StackPanel x:Name="Inner" Margin="0,11,0,9" HorizontalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                <TextBlock Text="{TemplateBinding Content}" FontFamily="{StaticResource Icons}" FontSize="17" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{TemplateBinding Tag}" FontSize="11" Margin="0,5,0,0" HorizontalAlignment="Center" Opacity="0.75"/>
+                            </StackPanel>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Hover" Property="Opacity" Value="1"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Inner" Property="RenderTransform">
+                                    <Setter.Value><ScaleTransform ScaleX="0.92" ScaleY="0.92"/></Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Small pill choice (timer presets) -->
+        <Style x:Key="Chip" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource Fg}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Margin" Value="0,0,6,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{DynamicResource Card}" CornerRadius="99" Padding="12,6">
+                            <ContentPresenter HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource Accent}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Big round action (mute button on the call card) -->
+        <Style x:Key="RoundAction" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontFamily" Value="{StaticResource Icons}"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Height" Value="46"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="99" RenderTransformOrigin="0.5,0.5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bg" Property="Opacity" Value="0.88"/></Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="RenderTransform">
+                                    <Setter.Value><ScaleTransform ScaleX="0.92" ScaleY="0.92"/></Setter.Value>
+                                </Setter>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

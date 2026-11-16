@@ -35,6 +35,34 @@ public sealed class UnitConverter : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => Binding.DoNothing;
 }
 
+/// <summary>
+/// Turns a 0..1 fraction into a StrokeDashArray that draws that much of a circle's outline.
+/// ConverterParameter = "diameter,thickness" (WPF dash lengths are measured in stroke thicknesses).
+/// </summary>
+public sealed class RingDashConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        double fraction = value is double d ? Math.Clamp(d, 0, 1) : 0;
+        var parts = (parameter as string ?? "20,2").Split(',');
+        double diameter = double.Parse(parts[0], CultureInfo.InvariantCulture);
+        double thickness = double.Parse(parts[1], CultureInfo.InvariantCulture);
+        double circumference = Math.PI * (diameter - thickness);
+        return new System.Windows.Media.DoubleCollection { Math.Max(0.001, fraction * circumference / thickness), 10000 };
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => Binding.DoNothing;
+}
+
+/// <summary>Visible when the bound enum equals ConverterParameter.</summary>
+public sealed class EnumVisibilityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value?.ToString() == parameter?.ToString() ? Visibility.Visible : Visibility.Collapsed;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => Binding.DoNothing;
+}
+
 public sealed class InverseBoolToVisibility : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>

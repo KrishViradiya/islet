@@ -13,7 +13,7 @@
     <AssemblyName>Islet</AssemblyName>
     <RootNamespace>Islet</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
     <StartupObject>Islet.Program</StartupObject>
     <ApplicationIcon>..\..\assets\islet.ico</ApplicationIcon>
     <Product>Islet</Product>

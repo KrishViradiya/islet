@@ -50,6 +50,24 @@ public sealed class IslandSettings : Observable
     private bool _showAgents = true, _agentApprovals = true, _agentSound = true;
     private int _approvalTimeout = 90;
 
+    // ---- v0.4: everyday helpers
+    private bool _showCalls = true, _micHotkey = true, _showTimers = true, _timerSound = true;
+    private bool _showDownloads = true, _devicePeeks = true, _splitIsland = true, _onboarded;
+
+    /// <summary>Meeting mode: call timer + mic mute when an app uses the microphone.</summary>
+    public bool ShowCalls { get => _showCalls; set => Set(ref _showCalls, value); }
+    /// <summary>Ctrl+Alt+M mutes / unmutes the microphone everywhere.</summary>
+    public bool MicHotkey { get => _micHotkey; set => Set(ref _micHotkey, value); }
+    public bool ShowTimers { get => _showTimers; set => Set(ref _showTimers, value); }
+    public bool TimerSound { get => _timerSound; set => Set(ref _timerSound, value); }
+    public bool ShowDownloads { get => _showDownloads; set => Set(ref _showDownloads, value); }
+    /// <summary>Bluetooth connect / charger / low-battery pop-ups.</summary>
+    public bool DevicePeeks { get => _devicePeeks; set => Set(ref _devicePeeks, value); }
+    /// <summary>When two things are live, a second bubble splits off the island.</summary>
+    public bool SplitIsland { get => _splitIsland; set => Set(ref _splitIsland, value); }
+    /// <summary>The first-run welcome card was dismissed.</summary>
+    public bool Onboarded { get => _onboarded; set => Set(ref _onboarded, value); }
+
     private bool _autoUpdate = true;
     /// <summary>Check GitHub Releases for a newer version (twice a day). Nothing else is sent.</summary>
     public bool AutoUpdate { get => _autoUpdate; set => Set(ref _autoUpdate, value); }

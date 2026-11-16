@@ -31,6 +31,9 @@ public sealed class LiveActivityServer : IDisposable
     private readonly Dispatcher _ui;
     private HttpListener? _listener;
 
+    /// <summary>POST /timer?minutes=25[&amp;label=Tea] starts a timer (set by the view model).</summary>
+    public Func<int, string?, bool>? StartTimer { get; set; }
+
     public LiveActivityServer(ActivityHub hub, AgentHub agents, Dispatcher ui)
     {
         _hub = hub;
@@ -89,6 +92,12 @@ public sealed class LiveActivityServer : IDisposable
             if (parts.Length == 2 && parts[0] == "agent" && method == "POST")
             {
                 await HandleAgentAsync(parts[1], req, res);
+            }
+            else if (parts.Length == 1 && parts[0] == "timer" && method == "POST")
+            {
+                bool ok = int.TryParse(req.QueryString["minutes"], out var minutes) && minutes is > 0 and <= 600 && StartTimer != null;
+                if (ok) ok = await _ui.InvokeAsync(() => StartTimer!(minutes, req.QueryString["label"]));
+                await Reply(res, ok ? 200 : 400, ok ? new { started = minutes } : new { error = "use /timer?minutes=1..600" });
             }
             else if (parts.Length == 0 && method == "GET")
             {

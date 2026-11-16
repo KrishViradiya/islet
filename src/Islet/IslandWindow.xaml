@@ -15,6 +15,52 @@
     -->
 
     <Grid>
+        <!-- The split bubble: when two things are live, the second one pops out beside the island. -->
+        <Grid x:Name="Bubble" HorizontalAlignment="Center" VerticalAlignment="Top" Opacity="0" IsHitTestVisible="False"
+              MouseEnter="Island_MouseEnter">
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="BubbleShift"/>
+            </Grid.RenderTransform>
+            <Border x:Name="BubbleShape" Background="{DynamicResource IslandBg}">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="18" ShadowDepth="2" Direction="270" Opacity="0.45" Color="Black"/>
+                </Border.Effect>
+            </Border>
+            <Grid x:Name="BubbleContent" RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform><ScaleTransform x:Name="BubbleContentScale"/></Grid.RenderTransform>
+                <!-- music: album art -->
+                <Grid Width="20" Height="20" Visibility="{Binding Secondary, Converter={StaticResource IsVis}, ConverterParameter=Media}">
+                    <Ellipse Fill="{DynamicResource Track}"/>
+                    <Image Source="{Binding Media.Thumbnail}" Stretch="UniformToFill">
+                        <Image.Clip><EllipseGeometry Center="10,10" RadiusX="10" RadiusY="10"/></Image.Clip>
+                    </Image>
+                </Grid>
+                <!-- timer: ring -->
+                <Grid Width="18" Height="18" Visibility="{Binding Secondary, Converter={StaticResource IsVis}, ConverterParameter=Timer}">
+                    <Ellipse Stroke="{DynamicResource Track}" StrokeThickness="2.2"/>
+                    <Ellipse Stroke="{DynamicResource Accent}" StrokeThickness="2.2" StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5"
+                             StrokeDashArray="{Binding RunningTimer.Fraction, Converter={StaticResource Ring}, ConverterParameter='18,2.2'}">
+                        <Ellipse.RenderTransform><RotateTransform Angle="-90"/></Ellipse.RenderTransform>
+                    </Ellipse>
+                </Grid>
+                <!-- call: mic -->
+                <TextBlock Text="{Binding MicGlyph}" FontFamily="{StaticResource Icons}" FontSize="14" Foreground="{Binding MicBrush}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Visibility="{Binding Secondary, Converter={StaticResource IsVis}, ConverterParameter=Call}"/>
+                <!-- download -->
+                <TextBlock Text="&#xE896;" FontFamily="{StaticResource Icons}" FontSize="14" Foreground="{DynamicResource Accent}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Visibility="{Binding Secondary, Converter={StaticResource IsVis}, ConverterParameter=Download}"/>
+                <!-- agent / activity -->
+                <TextBlock Text="&#xE99A;" FontFamily="{StaticResource Icons}" FontSize="14" Foreground="{Binding CompactAgentBrush}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Visibility="{Binding Secondary, Converter={StaticResource IsVis}, ConverterParameter=Agent}"/>
+                <TextBlock Text="&#xE9F5;" FontFamily="{StaticResource Icons}" FontSize="14" Foreground="{DynamicResource Accent}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Visibility="{Binding Secondary, Converter={StaticResource IsVis}, ConverterParameter=Activity}"/>
+            </Grid>
+        </Grid>
+
         <Grid x:Name="Island" HorizontalAlignment="Center" VerticalAlignment="Top"
               AllowDrop="True"
               MouseEnter="Island_MouseEnter" MouseWheel="Island_MouseWheel"
@@ -84,6 +130,65 @@
                                 </EventTrigger>
                             </Ellipse.Triggers>
                         </Ellipse>
+                    </Grid>
+
+                    <!-- Meeting: who you're talking on + call timer + mic state -->
+                    <Grid Visibility="{Binding ShowCompactCall, Converter={StaticResource Vis}}" Margin="4,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Ellipse Width="8" Height="8" Fill="{Binding MicBrush}" VerticalAlignment="Center">
+                            <Ellipse.Triggers>
+                                <EventTrigger RoutedEvent="Loaded">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="1" To="0.35" Duration="0:0:0.9"
+                                                             AutoReverse="True" RepeatBehavior="Forever"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Ellipse.Triggers>
+                        </Ellipse>
+                        <TextBlock Grid.Column="1" Margin="9,0,8,0" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                            <Run Text="{Binding CallApp, Mode=OneWay}"/><Run Text="  " /><Run Text="{Binding CallDuration, Mode=OneWay}" Foreground="{DynamicResource Dim}"/>
+                        </TextBlock>
+                        <TextBlock Grid.Column="2" Text="{Binding MicGlyph}" FontFamily="{StaticResource Icons}" FontSize="13"
+                                   Foreground="{Binding MicBrush}" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Timer: countdown ring + time left -->
+                    <Grid Visibility="{Binding ShowCompactTimer, Converter={StaticResource Vis}}" Margin="4,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid Width="16" Height="16" VerticalAlignment="Center">
+                            <Ellipse Stroke="{DynamicResource Track}" StrokeThickness="2"/>
+                            <Ellipse Stroke="{DynamicResource Accent}" StrokeThickness="2" StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5"
+                                     StrokeDashArray="{Binding RunningTimer.Fraction, Converter={StaticResource Ring}, ConverterParameter='16,2'}">
+                                <Ellipse.RenderTransform><RotateTransform Angle="-90"/></Ellipse.RenderTransform>
+                            </Ellipse>
+                        </Grid>
+                        <TextBlock Grid.Column="1" Text="{Binding RunningTimer.Label}" Margin="9,0,8,0" FontSize="12.5" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Grid.Column="2" Text="{Binding RunningTimer.RemainingText}" FontSize="12.5" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Accent}" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Download in progress -->
+                    <Grid Visibility="{Binding ShowCompactDownload, Converter={StaticResource Vis}}" Margin="4,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#xE896;" FontFamily="{StaticResource Icons}" FontSize="13" Foreground="{DynamicResource Accent}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding ActiveDownload.Name}" Margin="9,0,8,0" FontSize="12.5" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Grid.Column="2" Text="{Binding ActiveDownload.Detail}" FontSize="11.5" Foreground="{DynamicResource Dim}" VerticalAlignment="Center"/>
                     </Grid>
 
                     <!-- Now playing: album art left, dancing bars right -->
@@ -245,6 +350,200 @@
                             <!-- ===== HOME ===== -->
                             <StackPanel x:Name="HomePanel">
                                 <StackPanel.RenderTransform><TranslateTransform/></StackPanel.RenderTransform>
+
+                                <!-- First run: a friendly hello that teaches the three things worth knowing -->
+                                <Grid Margin="0,0,0,10" Visibility="{Binding ShowWelcome, Converter={StaticResource Vis}}">
+                                    <Border Background="{DynamicResource Card}" CornerRadius="20"/>
+                                    <Border Background="{DynamicResource AccentWash}" CornerRadius="20"/>
+                                    <StackPanel Margin="16,14">
+                                        <TextBlock Text="Welcome to Islet" FontSize="16" FontWeight="SemiBold"/>
+                                        <TextBlock FontSize="12.5" Foreground="{DynamicResource Dim}" TextWrapping="Wrap" Margin="0,6,0,0" LineHeight="19">
+                                            Hover the island to open it. Scroll on it for volume, drop files on it to park them.
+                                            <LineBreak/>Ctrl+Alt+I keeps it open · Ctrl+Alt+M mutes your mic anywhere.
+                                        </TextBlock>
+                                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                            <Button Style="{StaticResource PrimaryButton}" Content="Got it" Command="{Binding DismissWelcomeCommand}" Margin="0,0,8,0"/>
+                                            <Button Style="{StaticResource SoftButton}" Content="Make it mine" Command="{Binding OpenSettingsCommand}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Quick actions: the things you reach for many times a day -->
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button Content="{Binding MicGlyph}" Tag="{Binding MicLabel}" Command="{Binding ToggleMicCommand}"
+                                            ToolTip="Mute / unmute your microphone everywhere (Ctrl+Alt+M)">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource Tile}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding MicMuted}" Value="True">
+                                                        <Setter Property="Background" Value="#40FF453A"/>
+                                                        <Setter Property="Foreground" Value="#FF6B63"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                    <Button Grid.Column="1" Style="{StaticResource Tile}" Content="&#xE916;" Tag="Timer"
+                                            Command="{Binding ToggleTimerPickerCommand}" ToolTip="Start a timer"/>
+                                    <Button Grid.Column="2" Style="{StaticResource Tile}" Content="&#xE8C6;" Tag="Snip"
+                                            Command="{Binding SnipCommand}" ToolTip="Screenshot an area (like Win+Shift+S)"/>
+                                    <Button Grid.Column="3" Style="{StaticResource Tile}" Content="&#xE896;" Tag="Downloads" Margin="0"
+                                            Command="{Binding OpenDownloadsCommand}" ToolTip="Open your Downloads folder"/>
+                                </Grid>
+
+                                <!-- Timer presets (shown after tapping Timer); scroll the last chip to pick any length -->
+                                <WrapPanel Margin="0,0,0,6" Visibility="{Binding TimerPickerOpen, Converter={StaticResource Vis}}">
+                                    <Button Style="{StaticResource Chip}" Content="1 min" Command="{Binding StartTimerCommand}" CommandParameter="1"/>
+                                    <Button Style="{StaticResource Chip}" Content="5 min" Command="{Binding StartTimerCommand}" CommandParameter="5"/>
+                                    <Button Style="{StaticResource Chip}" Content="10 min" Command="{Binding StartTimerCommand}" CommandParameter="10"/>
+                                    <Button Style="{StaticResource Chip}" Content="15 min" Command="{Binding StartTimerCommand}" CommandParameter="15"/>
+                                    <Button Style="{StaticResource Chip}" Content="Focus 25" Command="{Binding StartTimerCommand}" CommandParameter="25"/>
+                                    <Button Style="{StaticResource Chip}" Content="45 min" Command="{Binding StartTimerCommand}" CommandParameter="45"/>
+                                    <Button Style="{StaticResource Chip}" Command="{Binding CustomTimerCommand}" MouseWheel="CustomTimer_Wheel"
+                                            ToolTip="Scroll to change, click to start">
+                                        <TextBlock>
+                                            <Run Text="&#xE916;" FontFamily="{StaticResource Icons}" FontSize="11"/><Run Text=" "/><Run Text="{Binding CustomLabel, Mode=OneWay}"/>
+                                        </TextBlock>
+                                    </Button>
+                                </WrapPanel>
+
+                                <!-- Timers -->
+                                <ItemsControl ItemsSource="{Binding Timers}" Visibility="{Binding Settings.ShowTimers, Converter={StaticResource Vis}}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border CornerRadius="18" Padding="12,10,8,10" Margin="0,0,0,8" Background="{DynamicResource Card}" BorderThickness="1.5">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsDone}" Value="True">
+                                                                <Setter Property="BorderBrush" Value="#FF9F0A"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Grid Width="40" Height="40">
+                                                        <Ellipse Stroke="{DynamicResource Track}" StrokeThickness="3.5"/>
+                                                        <Ellipse Stroke="{DynamicResource Accent}" StrokeThickness="3.5" StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5"
+                                                                 StrokeDashArray="{Binding Fraction, Converter={StaticResource Ring}, ConverterParameter='40,3.5'}">
+                                                            <Ellipse.RenderTransform><RotateTransform Angle="-90"/></Ellipse.RenderTransform>
+                                                        </Ellipse>
+                                                        <TextBlock Text="&#xE916;" FontFamily="{StaticResource Icons}" FontSize="14" HorizontalAlignment="Center"
+                                                                   VerticalAlignment="Center" Foreground="{DynamicResource Dim}"/>
+                                                    </Grid>
+                                                    <StackPanel Grid.Column="1" Margin="12,0,8,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Label}" FontSize="12" Foreground="{DynamicResource Dim}"/>
+                                                        <TextBlock Text="{Binding RemainingText}" FontSize="20" FontWeight="SemiBold"/>
+                                                    </StackPanel>
+                                                    <!-- running / paused -->
+                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"
+                                                                Visibility="{Binding IsDone, Converter={StaticResource NotVis}}">
+                                                        <Button Style="{StaticResource IconButton}" Content="{Binding PauseGlyph}" ToolTip="Pause / resume"
+                                                                Command="{Binding DataContext.TimerPauseCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                                        <Button Style="{StaticResource IconButton}" FontFamily="Segoe UI" FontSize="12" FontWeight="SemiBold" Content="+1" ToolTip="Add a minute"
+                                                                Command="{Binding DataContext.TimerAddCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                                        <Button Style="{StaticResource IconButton}" Content="&#xE711;" FontSize="10" ToolTip="Cancel"
+                                                                Command="{Binding DataContext.TimerRemoveCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                                    </StackPanel>
+                                                    <!-- time's up -->
+                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"
+                                                                Visibility="{Binding IsDone, Converter={StaticResource Vis}}">
+                                                        <Button Style="{StaticResource SoftButton}" Content="+5 min" Margin="0,0,8,0"
+                                                                Command="{Binding DataContext.TimerAddCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                                        <Button Style="{StaticResource PrimaryButton}" Content="Done"
+                                                                Command="{Binding DataContext.TimerRemoveCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- Meeting mode: call timer + one big mute button -->
+                                <Border Background="{DynamicResource Card}" CornerRadius="18" Padding="14,10,10,10" Margin="0,0,0,8"
+                                        Visibility="{Binding InCall, Converter={StaticResource Vis}}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Ellipse Width="8" Height="8" Fill="{Binding MicBrush}" VerticalAlignment="Center"/>
+                                                <TextBlock Margin="8,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center">
+                                                    <Run Text="In a call · "/><Run Text="{Binding CallApp, Mode=OneWay}"/>
+                                                </TextBlock>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="16,3,0,0">
+                                                <TextBlock Text="{Binding CallDuration}" FontSize="12" Foreground="{DynamicResource Dim}"/>
+                                                <TextBlock Text="  ·  camera on" FontSize="12" Foreground="#30D158"
+                                                           Visibility="{Binding CameraOn, Converter={StaticResource Vis}}"/>
+                                                <TextBlock Text="  ·  you're muted" FontSize="12" Foreground="#FF6B63"
+                                                           Visibility="{Binding MicMuted, Converter={StaticResource Vis}}"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Style="{StaticResource RoundAction}" Content="{Binding MicGlyph}" Background="{Binding MicBrush}"
+                                                Command="{Binding ToggleMicCommand}" ToolTip="Mute / unmute (Ctrl+Alt+M)"/>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Downloads: live progress, then open / show / drag anywhere -->
+                                <ItemsControl ItemsSource="{Binding Downloads.Items}" Visibility="{Binding Settings.ShowDownloads, Converter={StaticResource Vis}}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Style="{StaticResource HoverCard}" CornerRadius="16" Padding="10,8,6,8" Margin="0,0,0,8" Tag="{Binding}"
+                                                    Cursor="Hand" ToolTip="Drag me into an email, chat or folder"
+                                                    PreviewMouseLeftButtonDown="Download_MouseDown" MouseMove="Download_MouseMove">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Grid Width="36" Height="36">
+                                                        <Border CornerRadius="10" Background="{DynamicResource Card}"/>
+                                                        <TextBlock Text="&#xE896;" FontFamily="{StaticResource Icons}" FontSize="16" Foreground="{DynamicResource Accent}"
+                                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                   Visibility="{Binding IsActive, Converter={StaticResource Vis}}"/>
+                                                        <Image Source="{Binding Icon}" Width="30" Height="30" Stretch="Uniform"
+                                                               Visibility="{Binding IsDone, Converter={StaticResource Vis}}"/>
+                                                    </Grid>
+                                                    <StackPanel Grid.Column="1" Margin="10,0,8,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12.5" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock FontSize="11.5" Foreground="{DynamicResource Dim}">
+                                                            <Run Text="{Binding Detail, Mode=OneWay}"/>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <Button Style="{StaticResource IconButton}" Content="&#xE8E5;" FontSize="13" ToolTip="Open"
+                                                                Visibility="{Binding IsDone, Converter={StaticResource Vis}}"
+                                                                Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                                        <Button Style="{StaticResource IconButton}" Content="&#xE838;" FontSize="13" ToolTip="Show in folder"
+                                                                Visibility="{Binding IsDone, Converter={StaticResource Vis}}"
+                                                                Command="{Binding DataContext.ShowInFolderCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                                        <Button Style="{StaticResource IconButton}" Content="&#xE718;" FontSize="13" ToolTip="Keep on the shelf"
+                                                                Visibility="{Binding IsDone, Converter={StaticResource Vis}}"
+                                                                Command="{Binding DataContext.ShelveDownloadCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                                        <Button Style="{StaticResource IconButton}" Content="&#xE711;" FontSize="9" Width="26" Height="26" ToolTip="Dismiss"
+                                                                Command="{Binding DataContext.DismissDownloadCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
 
                                 <!-- AI agent approvals: Allow / Deny without hunting for the terminal -->
                                 <ItemsControl ItemsSource="{Binding Agents.Approvals}"

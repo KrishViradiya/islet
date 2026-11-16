@@ -9,6 +9,9 @@ Islet has **no accounts, no analytics, no telemetry and no ads**. Everything run
   private is never recorded.
 - The Live Activities / AI agents API listens on `localhost` only and rejects requests from web pages.
 - Claude Code hook data (prompts, tool names, answers) goes from Claude Code to Islet on your PC and nowhere else.
+- Meeting mode only reads *which* app uses your microphone (from Windows' privacy records) and mutes / unmutes the
+  mic when you ask. Islet never listens to or records audio.
+- The Downloads watcher only looks at file names and sizes in your Downloads folder; nothing is uploaded.
 
 ## What goes over the internet (only when the feature is on)
 
